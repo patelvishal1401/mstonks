@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>mstonks terminal, narrative board</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- fonts load without blocking the board: the page paints in the fallback stack and swaps when they land -->
@@ -705,9 +706,9 @@ footer .lk a{color:var(--mute)}
     $('#sRate').textContent = state.rate.toLocaleString('en-US');
   }, 2600);
 
-  /* launch countdown, 5 Oct 2026 23:00 SGT */
+  /* launch countdown, 30 Oct 2026 23:00 SGT */
   (function countdown() {
-    var target = Date.UTC(2026, 9, 5, 15, 0, 0), el = $('#cdNav');
+    var target = Date.UTC(2026, 9, 30, 15, 0, 0), el = $('#cdNav');
     var pad = function (n) { return (n < 10 ? '0' : '') + n; };
     var tick = function () {
       var left = target - Date.now();
@@ -997,7 +998,7 @@ footer .lk a{color:var(--mute)}
         '. You are the scout on record: 30% of every trade fee, plus stock rewards on the pair.</div>' +
       '<div class="rid">Reservation #' + String(q).padStart(3, '0') + ' · queue position ' + q + ' of ' + SLOTS + '</div>' +
       '</div>' +
-      '<div class="note"><b>!</b><div>Your hold expires <b>24 hours after the launchpad opens</b> on 5 Oct 2026, 23:00 SGT. We post the countdown in Telegram, so join it now while you remember.</div></div>' +
+      '<div class="note"><b>!</b><div>Your hold expires <b>24 hours after the launchpad opens</b> on 30 Oct 2026, 23:00 SGT. We post the countdown in Telegram, so join it now while you remember.</div></div>' +
       '<div class="links">' +
         '<a class="cta" href="#board" data-act="tg">Join the Telegram<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8h11M9 3.5 13.5 8 9 12.5"/></svg></a>' +
         '<a class="cta ghost" href="#board" data-act="x">Follow @mstonks on X</a>' +
