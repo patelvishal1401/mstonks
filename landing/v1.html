@@ -1,0 +1,960 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>mstonks, stock narrative markets</title>
+<meta name="description" content="AI agents scout stock narratives as they start to trend. Launch the memestock early, earn the real stock from every trade after you, then trade daily UP/DOWN markets on the pair.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 118 128'%3E%3Cg fill='%2322c55e'%3E%3Crect x='4.6' y='0' width='3.4' height='111' rx='1.7'/%3E%3Crect x='0' y='17' width='12.7' height='88' rx='6.3'/%3E%3Crect x='27.1' y='29' width='3.4' height='79' rx='1.7'/%3E%3Crect x='22.4' y='38' width='12.7' height='64' rx='6.3'/%3E%3Crect x='69.5' y='39' width='3.4' height='69' rx='1.7'/%3E%3Crect x='64.8' y='45' width='12.7' height='57' rx='6.3'/%3E%3Crect x='92' y='2' width='3.4' height='109' rx='1.7'/%3E%3Crect x='87.3' y='18' width='12.7' height='85' rx='6.3'/%3E%3C/g%3E%3Cg fill='%23f2701f'%3E%3Crect x='48.1' y='56' width='3.4' height='60' rx='1.7'/%3E%3Crect x='43.4' y='62' width='12.7' height='40' rx='6.3'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ==================================================================
+   mstonks / IGNITION
+   A narrative behaves like a wildfire: a spark in dry fuel, most die,
+   a few catch and spread, peak, then burn to ash.
+
+   Colour is split by role, not by taste:
+     GREEN  = the instrument. mstonks itself, the scanner, every CTA.
+     HEAT   = the subject. A narrative's lifecycle, cold to hot to cold.
+   ================================================================== */
+:root{
+  /* ground */
+  --void:#07090d; --ash:#0b0e14; --panel:#101620; --panel-2:#151d29;
+  --line:rgba(233,240,247,.085); --line-2:rgba(233,240,247,.16);
+
+  /* type */
+  --ink:#eef2f6; --ink-2:#a8b3c0; --ink-3:#6e7885; --ink-4:#49515c;
+
+  /* the instrument */
+  --sig:#22c55e; --sig-2:#4ade80; --sig-deep:#128a41;
+
+  /* the heat ramp = the lifecycle */
+  --spark:#5b9bf0; --catch:#22c55e; --fire:#f0b429; --peak:#f2701f; --dead:#5c646e;
+  --down:#f4515f;
+
+  /* system */
+  --sans:'Space Grotesk',ui-sans-serif,system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+  --r:2px;
+  --out:cubic-bezier(.23,1,.32,1);
+  --inout:cubic-bezier(.77,0,.175,1);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--void);color:var(--ink);
+  font-family:var(--sans);font-size:16px;line-height:1.55;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  overflow-x:hidden;
+}
+::selection{background:var(--sig);color:var(--void)}
+a{color:inherit;text-decoration:none}
+canvas{display:block}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+
+:where(a,button,[tabindex]):focus-visible{outline:2px solid var(--sig);outline-offset:3px}
+
+/* ---------------------------------------------------------- shell */
+.wrap{width:100%;max-width:1200px;margin:0 auto;padding:0 24px}
+@media(max-width:640px){.wrap{padding:0 18px}}
+
+section{position:relative}
+.screen{min-height:min(100dvh,860px);display:flex;flex-direction:column;justify-content:center;padding:108px 0 84px}
+@media(max-width:860px){.screen{min-height:auto;padding:92px 0 72px}}
+
+/* ---------------------------------------------------------- nav */
+.nav{position:fixed;inset:0 0 auto 0;z-index:60;transition:background .25s var(--out),border-color .25s var(--out);border-bottom:1px solid transparent}
+.nav.solid{background:rgba(7,9,13,.86);backdrop-filter:blur(14px);border-bottom-color:var(--line)}
+.nav-in{display:flex;align-items:center;gap:28px;height:66px}
+.brand{display:flex;align-items:center;gap:11px;flex:none}
+.brand svg{height:34px;width:auto;display:block}
+.brand .wm{font-family:var(--mono);font-weight:500;font-size:20px;letter-spacing:-.045em;line-height:1}
+.brand .wm i{font-style:normal;color:var(--sig)}
+.nav-links{display:flex;gap:24px;margin-left:8px}
+.nav-links a{font-size:13.5px;color:var(--ink-3);transition:color .16s var(--out)}
+.nav-links a:hover{color:var(--ink)}
+.nav-cta{margin-left:auto}
+@media(max-width:760px){.nav-links{display:none}}
+
+/* ---------------------------------------------------------- buttons */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  height:44px;padding:0 20px;border-radius:var(--r);
+  font-family:var(--sans);font-size:14.5px;font-weight:600;letter-spacing:-.01em;
+  white-space:nowrap;border:1px solid transparent;cursor:pointer;
+  transition:background .16s var(--out),border-color .16s var(--out),transform .16s var(--out);
+}
+.btn-sm{height:36px;padding:0 15px;font-size:13.5px}
+.btn-p{background:var(--sig);color:var(--void)}
+.btn-l{background:var(--panel);color:var(--ink);border-color:var(--line-2)}
+@media(hover:hover) and (pointer:fine){
+  .btn-p:hover{background:var(--sig-2);transform:translateY(-1px)}
+  .btn-l:hover{border-color:var(--ink-4);background:var(--panel-2);transform:translateY(-1px)}
+}
+.btn:active{transform:translateY(0) scale(.985)}
+.btn .ar{width:13px;height:13px;transition:transform .2s var(--out)}
+.btn:hover .ar{transform:translateX(2px)}
+
+/* ---------------------------------------------------------- type */
+h1,h2,h3{margin:0;font-weight:600;letter-spacing:-.042em;line-height:.99;text-wrap:balance}
+h1{font-size:clamp(36px,4.9vw,62px)}
+h2{font-size:clamp(28px,4.1vw,54px)}
+.lede{margin:0;color:var(--ink-2);font-size:clamp(15.5px,1.45vw,18px);line-height:1.55;max-width:44ch;text-wrap:pretty}
+.chap{font-family:var(--mono);font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:var(--ink-4)}
+.heat{color:var(--fire)}
+.hot{color:var(--peak)}
+.on{color:var(--sig)}
+
+/* ---------------------------------------------------------- reveal */
+.rv{opacity:0;transform:translateY(22px);transition:opacity .8s var(--out),transform .8s var(--out)}
+.rv.in{opacity:1;transform:none}
+.rv[data-d="1"]{transition-delay:.07s}.rv[data-d="2"]{transition-delay:.14s}
+.rv[data-d="3"]{transition-delay:.21s}.rv[data-d="4"]{transition-delay:.28s}
+.rv[data-d="5"]{transition-delay:.35s}
+
+/* mask reveal for display lines */
+.ml{display:block;overflow:hidden;padding-bottom:.06em}
+.ml>span{display:inline-block;transform:translateY(104%);transition:transform .95s var(--out)}
+.in .ml>span,.ml.in>span{transform:none}
+.ml[data-d="1"]>span{transition-delay:.08s}
+.ml[data-d="2"]>span{transition-delay:.16s}
+
+/* ---------------------------------------------------------- rail */
+.rail{position:fixed;right:22px;top:50%;transform:translateY(-50%);z-index:50;display:flex;flex-direction:column;gap:13px}
+.rail b{display:block;width:6px;height:6px;border-radius:50%;background:var(--ink-4);transition:background .3s var(--out),transform .3s var(--out);cursor:pointer}
+.rail b.act{background:var(--sig);transform:scale(1.5)}
+@media(max-width:1080px){.rail{display:none}}
+
+/* ---------------------------------------------------------- hero */
+.hero{position:relative;overflow:hidden}
+#emberfield{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.hero-in{position:relative;z-index:2;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr);gap:52px;align-items:center}
+@media(max-width:980px){.hero-in{grid-template-columns:1fr;gap:40px}}
+.hero .cta-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:34px}
+
+/* live scanner panel */
+.scan{background:linear-gradient(180deg,rgba(16,22,32,.94),rgba(11,14,20,.94));border:1px solid var(--line);backdrop-filter:blur(6px)}
+.scan-h{display:flex;align-items:baseline;justify-content:space-between;padding:11px 15px;border-bottom:1px solid var(--line)}
+.scan-h .t{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-4)}
+.scan-h .v{font-family:var(--mono);font-size:11.5px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.srow{padding:13px 15px;border-bottom:1px solid rgba(233,240,247,.05);position:relative;overflow:hidden}
+.srow:last-child{border-bottom:0}
+.srow .top{display:flex;align-items:center;gap:9px;margin-bottom:7px}
+.srow .tk{font-family:var(--mono);font-size:11px;color:var(--ink-2)}
+.srow .ti{font-size:13.5px;line-height:1.3;color:var(--ink)}
+.srow .bot{display:flex;align-items:center;gap:12px;margin-top:9px}
+.srow .bot .m{font-family:var(--mono);font-size:11px;font-variant-numeric:tabular-nums}
+.srow .age{margin-left:auto;font-family:var(--mono);font-size:10.5px;color:var(--ink-4)}
+.pill{
+  display:inline-flex;align-items:center;height:17px;padding:0 6px;border-radius:var(--r);
+  font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;line-height:1;flex:none;
+}
+.spk{width:62px;height:18px;flex:none}
+
+/* ---------------------------------------------------------- ch. scout */
+.scout-in{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);gap:60px;align-items:center}
+@media(max-width:980px){.scout-in{grid-template-columns:1fr;gap:38px}}
+.cascade-box{position:relative;aspect-ratio:1/.82;width:100%;border:1px solid var(--line);background:var(--ash);overflow:hidden}
+#cascade{position:absolute;inset:0;width:100%;height:100%}
+.cascade-cap{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;gap:12px;
+  padding:9px 13px;border-top:1px solid var(--line);background:rgba(7,9,13,.8);backdrop-filter:blur(4px);
+  font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-4)}
+.cascade-cap b{color:var(--ink-2);font-weight:400}
+.feed{margin:30px 0 0;padding:0;list-style:none;border-top:1px solid var(--line)}
+.feed li{display:flex;gap:16px;padding:14px 0;border-bottom:1px solid var(--line)}
+.feed .k{flex:none;width:82px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-4);padding-top:3px}
+.feed .d{font-size:14px;line-height:1.5;color:var(--ink-2)}
+.feed .d b{color:var(--ink);font-weight:500}
+
+/* ---------------------------------------------------------- ch. launch (interactive) */
+.lab{border:1px solid var(--line);background:var(--ash)}
+.lab-h{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 18px;border-bottom:1px solid var(--line)}
+.lab-h .t{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-4)}
+.lab-h .hint{margin-left:auto;display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:10.5px;color:var(--sig)}
+.lab-h .hint svg{width:13px;height:13px;animation:nudge 2.4s var(--inout) infinite}
+@keyframes nudge{0%,100%{transform:translateX(-2px)}50%{transform:translateX(2px)}}
+
+.curve-wrap{position:relative;padding:26px 18px 0;touch-action:pan-y}
+#curve{width:100%;height:260px;cursor:ew-resize}
+@media(max-width:640px){#curve{height:200px}}
+.stagestrip{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);margin-top:14px}
+.stagestrip button{
+  appearance:none;background:none;border:0;border-right:1px solid var(--line);
+  padding:11px 8px;text-align:left;cursor:pointer;
+  font-family:var(--mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--ink-4);transition:background .2s var(--out),color .2s var(--out)
+}
+.stagestrip button:last-child{border-right:0}
+.stagestrip button.act{color:var(--void)}
+@media(max-width:640px){.stagestrip button{font-size:8.5px;padding:9px 5px;letter-spacing:.06em}}
+
+.readout{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line)}
+.readout div{padding:16px 18px;border-right:1px solid var(--line)}
+.readout div:last-child{border-right:0}
+.readout .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-4)}
+.readout .v{font-family:var(--mono);font-size:clamp(19px,2.4vw,27px);letter-spacing:-.035em;margin-top:7px;line-height:1;transition:color .3s var(--out)}
+@media(max-width:720px){.readout{grid-template-columns:repeat(2,1fr)}.readout div:nth-child(2){border-right:0}.readout div:nth-child(-n+2){border-bottom:1px solid var(--line)}}
+
+.verdict{display:flex;gap:14px;align-items:flex-start;padding:17px 18px;border-top:1px solid var(--line);background:var(--panel)}
+.verdict .dot{flex:none;width:9px;height:9px;border-radius:50%;margin-top:6px;transition:background .3s var(--out)}
+.verdict p{margin:0;font-size:15px;line-height:1.5;color:var(--ink-2);text-wrap:pretty}
+.verdict p b{color:var(--ink);font-weight:500}
+
+/* ---------------------------------------------------------- ch. predict */
+.pred-in{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:56px;align-items:center}
+@media(max-width:980px){.pred-in{grid-template-columns:1fr;gap:38px}}
+.mkt{border:1px solid var(--line);background:var(--ash)}
+.mkt-h{padding:15px 18px;border-bottom:1px solid var(--line)}
+.mkt-h .q{font-size:16px;line-height:1.35;font-weight:500;text-wrap:pretty}
+.mkt-h .sub{margin-top:7px;font-family:var(--mono);font-size:10.5px;color:var(--ink-4);letter-spacing:.04em}
+.sides{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line)}
+.side{
+  appearance:none;border:0;background:var(--ash);padding:20px 18px;text-align:left;cursor:pointer;
+  transition:background .2s var(--out);position:relative;overflow:hidden
+}
+.side .lab2{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase}
+.side .odds{font-family:var(--mono);font-size:clamp(30px,4.4vw,44px);letter-spacing:-.04em;line-height:1;margin-top:9px;display:block}
+.side .bar{position:absolute;left:0;bottom:0;height:2px;transition:width .5s var(--out)}
+.side[aria-pressed="true"]{background:var(--panel-2)}
+.side.up .lab2,.side.up .odds{color:var(--sig)} .side.up .bar{background:var(--sig)}
+.side.dn .lab2,.side.dn .odds{color:var(--down)} .side.dn .bar{background:var(--down)}
+.stake{display:flex;align-items:center;gap:14px;padding:15px 18px;border-top:1px solid var(--line)}
+.stake label{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-4);flex:none}
+.stake input[type=range]{flex:1;accent-color:var(--sig);height:2px}
+.stake output{font-family:var(--mono);font-size:14px;color:var(--ink);min-width:62px;text-align:right;font-variant-numeric:tabular-nums}
+.payout{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line)}
+.payout div{padding:16px 18px;border-right:1px solid var(--line)}
+.payout div:last-child{border-right:0}
+.payout .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-4)}
+.payout .v{font-family:var(--mono);font-size:24px;letter-spacing:-.035em;margin-top:7px;line-height:1}
+.venue{display:flex;flex-wrap:wrap;gap:0;margin-top:26px;border-top:1px solid var(--line)}
+.venue div{flex:1 1 220px;padding:16px 0;border-bottom:1px solid var(--line);padding-right:22px}
+.venue .k{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-4)}
+.venue .v{margin-top:7px;font-size:14px;color:var(--ink-2)}
+.venue .v b{color:var(--ink);font-weight:500}
+
+/* ---------------------------------------------------------- close */
+.close{position:relative;overflow:hidden;text-align:left}
+#emberclose{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.close .wrap{position:relative;z-index:2}
+
+/* ---------------------------------------------------------- footer */
+footer{border-top:1px solid var(--line);padding:40px 0 34px;font-size:12px;color:var(--ink-4)}
+footer .fx{display:flex;flex-wrap:wrap;gap:26px;align-items:flex-start;justify-content:space-between}
+footer p{margin:0;max-width:96ch;line-height:1.65}
+footer p b{color:var(--ink-3);font-weight:500}
+footer .lk{display:flex;gap:20px;font-family:var(--mono);font-size:11px}
+
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  .rv{opacity:1;transform:none}.ml>span{transform:none}
+}
+</style>
+</head>
+<body>
+
+<!-- =============================================================== nav -->
+<header class="nav" id="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="#top" aria-label="mstonks home">
+      <svg viewBox="-8 -6 118 128" fill="none" aria-hidden="true">
+        <g fill="var(--sig)">
+          <rect x="4.6" y="0" width="3.4" height="111.1" rx="1.7"/>
+          <rect x="-0.05" y="17.1" width="12.7" height="87.7" rx="6.35"/>
+          <rect x="27.1" y="29.2" width="3.4" height="79" rx="1.7"/>
+          <rect x="22.45" y="38" width="12.7" height="64.4" rx="6.35"/>
+          <rect x="69.5" y="39" width="3.4" height="69.2" rx="1.7"/>
+          <rect x="64.85" y="45.3" width="12.7" height="57.1" rx="6.35"/>
+          <rect x="92" y="2.4" width="3.4" height="108.7" rx="1.7"/>
+          <rect x="87.35" y="18" width="12.7" height="85.3" rx="6.35"/>
+        </g>
+        <g fill="var(--peak)">
+          <rect x="48.1" y="56.1" width="3.4" height="59.9" rx="1.7"/>
+          <rect x="43.45" y="62.4" width="12.7" height="40" rx="6.35"/>
+        </g>
+      </svg>
+      <span class="wm"><i>m</i>stonks</span>
+    </a>
+    <nav class="nav-links">
+      <a href="#scout">Scout</a>
+      <a href="#launch">Launch</a>
+      <a href="#predict">Predict</a>
+    </nav>
+    <a class="btn btn-p btn-sm nav-cta" href="#">Open terminal
+      <svg class="ar" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8h11M9 3.5 13.5 8 9 12.5"/></svg>
+    </a>
+  </div>
+</header>
+
+<div class="rail" id="rail" aria-hidden="true">
+  <b data-go="top"></b><b data-go="scout"></b><b data-go="launch"></b><b data-go="predict"></b><b data-go="close"></b>
+</div>
+
+<!-- ============================================================== hero -->
+<section class="hero screen" id="top">
+  <canvas id="emberfield"></canvas>
+  <div class="wrap hero-in">
+    <div>
+      <h1 class="rv">
+        <span class="ml"><span>Trade the narrative</span></span>
+        <span class="ml" data-d="1"><span>before the <em class="on" style="font-style:normal">ticker</em>.</span></span>
+      </h1>
+      <p class="lede rv" data-d="2" style="margin-top:28px">
+        AI agents scout stock narratives as they start to trend. Launch the
+        memestock early and earn the real stock from every trade after you.
+      </p>
+      <div class="cta-row rv" data-d="3">
+        <a class="btn btn-p" href="#">Open terminal
+          <svg class="ar" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8h11M9 3.5 13.5 8 9 12.5"/></svg>
+        </a>
+        <a class="btn btn-l" href="#scout">See how it works</a>
+      </div>
+    </div>
+
+    <div class="scan rv" data-d="4">
+      <div class="scan-h">
+        <span class="t">Trending now</span>
+        <span class="v" id="scanRate">1,284 posts / hr</span>
+      </div>
+      <div id="scanRows"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================= scout -->
+<section class="screen" id="scout">
+  <div class="wrap scout-in">
+    <div>
+      <h2 class="rv">
+        <span class="ml"><span>Every stock narrative,</span></span>
+        <span class="ml" data-d="1"><span><em class="on" style="font-style:normal">scored</em> before it trends.</span></span>
+      </h2>
+      <p class="lede rv" data-d="2" style="margin-top:24px">
+        Agents read news and X around the clock, cluster it into a single stock
+        narrative, and score whether attention is actually accelerating. You see
+        it on the board before anyone has launched a token against it.
+      </p>
+      <ul class="feed rv" data-d="3">
+        <li><span class="k">Scan</span><span class="d">News and X monitored continuously and mapped onto a <b>supported stock</b>.</span></li>
+        <li><span class="k">Cluster</span><span class="d">Related stories collapse into <b>one narrative</b> with its sources attached.</span></li>
+        <li><span class="k">Score</span><span class="d">Post counts give rate, velocity and <b>multiple of baseline</b> attention.</span></li>
+        <li><span class="k">Rank</span><span class="d">Clear the threshold and it goes <b>live on the board</b>, token or no token.</span></li>
+      </ul>
+    </div>
+
+    <div class="rv" data-d="2">
+      <div class="cascade-box">
+        <canvas id="cascade"></canvas>
+        <div class="cascade-cap">
+          <span>Posts tracked <b id="cDormant">0</b></span>
+          <span>Mentions <b id="cLit">0</b></span>
+          <span id="cState">Scanning</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ launch -->
+<section class="screen" id="launch">
+  <div class="wrap">
+    <div style="max-width:60ch">
+      <h2 class="rv">
+        <span class="ml"><span>Launch it early.</span></span>
+        <span class="ml" data-d="1"><span>Get paid in the <em class="on" style="font-style:normal">stock</em>.</span></span>
+      </h2>
+      <p class="lede rv" data-d="2" style="margin-top:24px">
+        Any wallet can launch the memestock paired to a narrative's stock. Half of
+        every trading fee goes back to holders in the real stock token, so the
+        earlier you are, the more of that flow is yours.
+      </p>
+    </div>
+
+    <div class="lab rv" data-d="3" style="margin-top:44px">
+      <div class="lab-h">
+        <span class="t">REDCAT / RCAT &nbsp;&nbsp; narrative: US drone reshoring</span>
+        <span class="hint"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5 1.5 8 4 10.5M12 5.5 14.5 8 12 10.5M1.5 8h13"/></svg>Drag your entry</span>
+      </div>
+
+      <div class="curve-wrap">
+        <canvas id="curve" role="slider" tabindex="0"
+                aria-label="Your entry point on the narrative lifecycle"
+                aria-valuemin="0" aria-valuemax="100" aria-valuenow="14"></canvas>
+      </div>
+
+      <div class="stagestrip" id="stages"></div>
+
+      <div class="readout">
+        <div><p class="k">Narrative state</p><p class="v" id="rState">Spark</p></div>
+        <div><p class="k">Vs baseline</p><p class="v" id="rBase">1.2x</p></div>
+        <div><p class="k">Entry market cap</p><p class="v" id="rMc">$4k</p></div>
+        <div><p class="k">Stock rewards earned</p><p class="v" id="rRew">$0</p></div>
+      </div>
+
+      <div class="verdict">
+        <span class="dot" id="vDot"></span>
+        <p id="vTxt"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================== predict -->
+<section class="screen" id="predict">
+  <div class="wrap pred-in">
+    <div>
+      <h2 class="rv">
+        <span class="ml"><span>Then trade daily</span></span>
+        <span class="ml" data-d="1"><span><em class="hot" style="font-style:normal">UP/DOWN</em> on the pair.</span></span>
+      </h2>
+      <p class="lede rv" data-d="2" style="margin-top:24px">
+        Memestocks that clear the liquidity and holder thresholds unlock a daily
+        prediction market. Leverage the run while the narrative is still
+        accelerating, or hedge the bag you already hold once it starts to fade.
+      </p>
+      <div class="venue rv" data-d="3">
+        <div><p class="k">Base</p><p class="v"><b>Limitless protocol</b>, integration in progress</p></div>
+        <div><p class="k">Robinhood Chain</p><p class="v"><b>Partner venue in scouting</b>, same adapter</p></div>
+      </div>
+    </div>
+
+    <div class="mkt rv" data-d="2">
+      <div class="mkt-h">
+        <p class="q">Will <b>REDCAT / RCAT</b> finish above its reference price at settlement?</p>
+        <p class="sub">Daily, settles 00:00 UTC. Reference $0.0312</p>
+      </div>
+      <div class="sides">
+        <button class="side up" id="sideUp" aria-pressed="true">
+          <span class="lab2">Up</span>
+          <span class="odds" id="oddsUp">62%</span>
+          <span class="bar" id="barUp" style="width:62%"></span>
+        </button>
+        <button class="side dn" id="sideDn" aria-pressed="false">
+          <span class="lab2">Down</span>
+          <span class="odds" id="oddsDn">38%</span>
+          <span class="bar" id="barDn" style="width:38%"></span>
+        </button>
+      </div>
+      <div class="stake">
+        <label for="stakeR">Size</label>
+        <input id="stakeR" type="range" min="25" max="2000" step="25" value="250">
+        <output id="stakeV">$250</output>
+      </div>
+      <div class="payout">
+        <div><p class="k">Payout if right</p><p class="v" id="payV" style="color:var(--sig)">$403</p></div>
+        <div><p class="k">Return</p><p class="v" id="retV" style="color:var(--sig)">+61%</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================= close -->
+<section class="screen close" id="close" style="min-height:82dvh">
+  <canvas id="emberclose"></canvas>
+  <div class="wrap">
+    <h2 class="rv" style="font-size:clamp(38px,6.4vw,86px)">
+      <span class="ml"><span>Find the narrative</span></span>
+      <span class="ml" data-d="1"><span>while it is still <em class="on" style="font-style:normal">cheap</em>.</span></span>
+    </h2>
+    <p class="lede rv" data-d="2" style="margin-top:26px">
+      Connect any wallet. No account, no custody, and you sign every launch,
+      trade and claim yourself.
+    </p>
+    <div class="cta-row rv" data-d="3" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:32px">
+      <a class="btn btn-p" href="#">Open terminal
+        <svg class="ar" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8h11M9 3.5 13.5 8 9 12.5"/></svg>
+      </a>
+      <a class="btn btn-l" href="#scout">See how it works</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap fx">
+    <p>
+      <b>Stock narrative markets.</b> Scout the story, launch the memestock, earn the
+      stock, trade the daily UP/DOWN.
+      <br><br>
+      <b>Not investment advice.</b> Memestocks launched on mstonks are community tokens.
+      A token referencing a company is parody or commentary. It is not equity, not an
+      endorsement, and carries no claim on any issuer. Narrative scores are decision
+      support derived from public news and post counts, not a prediction. Tokenized-stock
+      functionality is geofenced by issuer and venue eligibility. Prediction markets are
+      gated on liquidity, market cap, holders, age and price-feed quality. Perpetuals are
+      not offered. Figures on this page are illustrative.
+    </p>
+    <div class="lk"><a href="#top">Terms</a><a href="#top">Privacy</a><a href="#top">Disclosures</a></div>
+  </div>
+</footer>
+
+<script>
+(() => {
+"use strict";
+const RM = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const DPR = Math.min(devicePixelRatio || 1, 2);
+const $ = (s, r = document) => r.querySelector(s);
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+
+/* Heat ramp. The lifecycle, cold to hot to cold. */
+const HEAT = [
+  { k: "EMERGING",     label: "Emerging",     c: "#5b9bf0" },
+  { k: "ACCELERATING", label: "Accelerating", c: "#22c55e" },
+  { k: "BREAKOUT",     label: "Breakout",     c: "#f0b429" },
+  { k: "PEAKING",      label: "Peaking",      c: "#f2701f" },
+  { k: "FADING",       label: "Fading",       c: "#5c646e" },
+];
+const hex2rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+const HEATRGB = HEAT.map((s) => hex2rgb(s.c));
+
+/* Sample the ramp continuously so canvas colour tracks position, not buckets. */
+function heatAt(t) {
+  const x = clamp(t, 0, 1) * (HEATRGB.length - 1);
+  const i = Math.min(HEATRGB.length - 2, Math.floor(x));
+  const f = x - i;
+  const a = HEATRGB[i], b = HEATRGB[i + 1];
+  return [0, 1, 2].map((j) => Math.round(lerp(a[j], b[j], f)));
+}
+const rgba = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+
+/* Canvas that sizes to its box and only runs while on screen. */
+function makeCanvas(el, draw) {
+  const ctx = el.getContext("2d", { alpha: true });
+  let w = 0, h = 0, raf = 0, live = false, t0 = performance.now();
+
+  function size() {
+    const r = el.getBoundingClientRect();
+    w = Math.max(1, r.width); h = Math.max(1, r.height);
+    el.width = Math.round(w * DPR); el.height = Math.round(h * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+  function frame(now) {
+    if (!live) return;
+    draw(ctx, w, h, (now - t0) / 1000);
+    raf = requestAnimationFrame(frame);
+  }
+  const ro = new ResizeObserver(() => { size(); if (RM) draw(ctx, w, h, 0); });
+  ro.observe(el);
+  size();
+
+  new IntersectionObserver((es) => {
+    es.forEach((e) => {
+      if (e.isIntersecting && !live && !RM) { live = true; t0 = performance.now(); raf = requestAnimationFrame(frame); }
+      else if (!e.isIntersecting && live) { live = false; cancelAnimationFrame(raf); }
+    });
+  }, { rootMargin: "120px" }).observe(el);
+
+  if (RM) draw(ctx, w, h, 0);
+  return { redraw: () => draw(ctx, w, h, (performance.now() - t0) / 1000) };
+}
+
+/* ============================================================ 1. embers
+   Sparks lift off a dark floor. Most cool and die on the way up. A few
+   catch and burn hot. This is the whole product in one loop. */
+function emberField(el, density) {
+  let ps = [], W = 0, H = 0;
+  const spawn = (w, h) => {
+    const lucky = Math.random() < 0.09;
+    return {
+      x: Math.random() * w,
+      y: h + Math.random() * 40,
+      vy: -(6 + Math.random() * 16) / 60,
+      vx: (Math.random() - 0.5) * 0.22,
+      r: lucky ? 1.5 + Math.random() * 1.5 : 0.5 + Math.random() * 0.9,
+      life: 0,
+      max: lucky ? 5.5 + Math.random() * 3 : 1.6 + Math.random() * 2.4,
+      lucky,
+      seed: Math.random() * 100,
+    };
+  };
+  return makeCanvas(el, (ctx, w, h, t) => {
+    if (w !== W || h !== H) { W = w; H = h; ps = Array.from({ length: Math.round(w * h * density) }, () => { const p = spawn(w, h); p.y = Math.random() * h; p.life = Math.random() * p.max; return p; }); }
+    ctx.clearRect(0, 0, w, h);
+    ctx.globalCompositeOperation = "lighter";
+    for (let i = 0; i < ps.length; i++) {
+      const p = ps[i];
+      p.life += 1 / 60;
+      if (p.life > p.max || p.y < -20) { ps[i] = spawn(w, h); continue; }
+      p.y += p.vy * 60 / 60 * 1.5;
+      p.x += p.vx + Math.sin(t * 0.7 + p.seed) * 0.16;
+      const u = p.life / p.max;
+      // lucky embers climb the ramp; the rest cool from spark toward ash
+      const c = heatAt(p.lucky ? clamp(0.18 + u * 0.72, 0, 1) : clamp(0.1 + u * 0.22, 0, 1));
+      const a = (p.lucky ? 0.55 : 0.3) * Math.sin(Math.PI * clamp(u, 0, 1)) ** 0.7;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = rgba(c, a);
+      ctx.fill();
+      if (p.lucky && u > 0.3) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r * 5, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(c, a * 0.07);
+        ctx.fill();
+      }
+    }
+    ctx.globalCompositeOperation = "source-over";
+  });
+}
+if ($("#emberfield")) emberField($("#emberfield"), 0.00022);
+if ($("#emberclose")) emberField($("#emberclose"), 0.00016);
+
+/* ========================================================== 2. cascade
+   A field of dormant posts. A story lands, one node ignites, and the fire
+   spreads to neighbours only if they are close enough to catch. Most runs
+   fizzle. That is the point: the agent is looking for the one that does not. */
+(() => {
+  const el = $("#cascade"); if (!el) return;
+  const dEl = $("#cDormant"), lEl = $("#cLit"), sEl = $("#cState");
+  let nodes = [], W = 0, H = 0, phase = "idle", clock = 0, front = 0, lit = 0;
+
+  function build(w, h) {
+    const n = Math.round(clamp((w * h) / 1450, 150, 420));
+    nodes = Array.from({ length: n }, () => ({
+      x: Math.random() * w, y: Math.random() * h,
+      lit: 0, t: 0, seed: Math.random() * 100,
+    }));
+    // seed the ignition near the middle
+    nodes[0].x = w * 0.5; nodes[0].y = h * 0.54;
+  }
+
+  makeCanvas(el, (ctx, w, h, t) => {
+    if (w !== W || h !== H) { W = w; H = h; build(w, h); phase = "idle"; clock = 0; }
+    clock += 1 / 60;
+    ctx.clearRect(0, 0, w, h);
+
+    // cycle: dormant -> ignite -> spread -> burn out -> reset
+    if (phase === "idle" && clock > 1.1) { phase = "ignite"; nodes[0].lit = 1; clock = 0; front = 0; }
+    if (phase === "ignite" && clock > 0.35) { phase = "spread"; clock = 0; }
+    if (phase === "spread") {
+      front = clock * Math.max(w, h) * 0.42;
+      if (clock > 3.4) { phase = "cool"; clock = 0; }
+    }
+    if (phase === "cool" && clock > 2.6) {
+      phase = "idle"; clock = 0; nodes.forEach((n) => { n.lit = 0; n.t = 0; });
+    }
+
+    const src = nodes[0];
+    lit = 0;
+
+    // links first, so nodes sit on top
+    ctx.lineWidth = 1;
+    for (let i = 1; i < nodes.length; i++) {
+      const a = nodes[i];
+      for (let j = i + 1; j < Math.min(i + 4, nodes.length); j++) {
+        const b = nodes[j];
+        const d = Math.hypot(a.x - b.x, a.y - b.y);
+        if (d > 96) continue;
+        const glow = Math.min(a.lit, b.lit);
+        ctx.strokeStyle = glow > 0
+          ? rgba(heatAt(0.25 + glow * 0.5), 0.3 * glow)
+          : "rgba(233,240,247,.055)";
+        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+      }
+    }
+
+    for (const n of nodes) {
+      const d = Math.hypot(n.x - src.x, n.y - src.y);
+      if (phase === "spread" && !n.lit && d < front) {
+        // catch probability falls off with distance; some nodes never take
+        if (Math.sin(n.seed * 12.9) > -0.25) n.lit = 0.001;
+      }
+      if (n.lit > 0) {
+        n.t += 1 / 60;
+        n.lit = phase === "cool" ? Math.max(0, n.lit - 0.012) : Math.min(1, n.lit + 0.06);
+        lit++;
+      }
+      const c = n.lit > 0 ? heatAt(0.2 + n.lit * 0.62) : [124, 135, 149];
+      const a = n.lit > 0 ? 0.4 + n.lit * 0.6 : 0.42;
+      const r = n.lit > 0 ? 1.4 + n.lit * 2.4 : 1.1;
+      ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+      ctx.fillStyle = rgba(c, a); ctx.fill();
+      if (n.lit > 0.4) {
+        ctx.beginPath(); ctx.arc(n.x, n.y, r * 4.5, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(c, 0.05 * n.lit); ctx.fill();
+      }
+    }
+
+    // spread front
+    if (phase === "spread") {
+      ctx.beginPath(); ctx.arc(src.x, src.y, front, 0, Math.PI * 2);
+      ctx.strokeStyle = rgba(heatAt(0.45), 0.16 * (1 - clock / 3.4));
+      ctx.lineWidth = 1.4; ctx.stroke();
+    }
+
+    if (dEl) dEl.textContent = nodes.length - lit;
+    if (lEl) lEl.textContent = lit;
+    if (sEl) sEl.textContent =
+      phase === "idle" ? "Scanning" : phase === "ignite" ? "Narrative detected" :
+      phase === "spread" ? "Attention spreading" : "Fading";
+  });
+})();
+
+/* ====================================================== 3. entry lab
+   The narrative burn curve. Drag your entry along it and the market cap,
+   the stock rewards and the verdict all recompute together. Being early is
+   the position, so the numbers have to punish being late. */
+(() => {
+  const cv = $("#curve"); if (!cv) return;
+  const stagesEl = $("#stages");
+  const rState = $("#rState"), rBase = $("#rBase"), rMc = $("#rMc"), rRew = $("#rRew");
+  const vDot = $("#vDot"), vTxt = $("#vTxt");
+
+  let pos = 0.14;          // 0..1 along the narrative's life
+  let shown = 0.14;        // eased display value
+  let W = 0, H = 0;
+
+  /* Burn curve: slow smoulder, steep catch, blow-off, decay to ash. */
+  const burn = (x) => {
+    const rise = Math.exp(-Math.pow((x - 0.56) / 0.175, 2));
+    const tail = Math.exp(-Math.pow((x - 0.62) / 0.30, 2));
+    return clamp(0.018 + rise * 0.86 + tail * 0.095, 0, 1);
+  };
+  const stageIdx = (x) => x < 0.24 ? 0 : x < 0.46 ? 1 : x < 0.63 ? 2 : x < 0.78 ? 3 : 4;
+
+  /* Economics. Entry cap tracks the burn; rewards accrue from every trade
+     that happens after you, so they collapse the later you arrive. */
+  const entryMc = (x) => 3100 + Math.pow(burn(x), 1.6) * 520000;
+  const rewards = (x) => {
+    let after = 0;
+    for (let s = x; s <= 1; s += 0.01) after += burn(s) * 0.01;
+    return after * 5400;
+  };
+  const baseMult = (x) => 1 + Math.pow(burn(x), 1.15) * 9.6;
+
+  const money = (n) => n >= 1000 ? "$" + (n / 1000).toFixed(n >= 100000 ? 0 : 1) + "k" : "$" + Math.round(n);
+
+  /* stage strip */
+  HEAT.forEach((s, i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = s.label;
+    b.addEventListener("click", () => { pos = [0.12, 0.35, 0.55, 0.7, 0.9][i]; sync(); });
+    stagesEl.appendChild(b);
+  });
+
+  function sync() {
+    const x = pos, i = stageIdx(x), c = HEAT[i].c;
+    cv.setAttribute("aria-valuenow", Math.round(x * 100));
+    cv.setAttribute("aria-valuetext", HEAT[i].label);
+
+    rState.textContent = HEAT[i].label;   rState.style.color = c;
+    rBase.textContent = baseMult(x).toFixed(1) + "x";
+    rMc.textContent = money(entryMc(x));
+    const rw = rewards(x);
+    rRew.textContent = money(rw);
+    rRew.style.color = rw > 900 ? "var(--sig)" : rw > 300 ? "var(--fire)" : "var(--down)";
+
+    [...stagesEl.children].forEach((b, j) => {
+      const on = j === i;
+      b.classList.toggle("act", on);
+      b.style.background = on ? HEAT[j].c : "transparent";
+    });
+
+    const verdicts = [
+      ["var(--sig)",  "<b>You are first.</b> Nobody has launched against this narrative yet. Every trade for the rest of its life pays stock rewards into your position."],
+      ["var(--sig)",  "<b>Still early.</b> The token exists but the crowd has not arrived. More fee flow sits ahead of you than behind you."],
+      ["var(--fire)", "<b>The crowd is here.</b> You are paying roughly 100x the emerging entry for a narrative that is already priced in, and most of the reward flow is behind you."],
+      ["var(--peak)", "<b>Attention has stopped growing.</b> Buying here is a bet that the top holds long enough for rewards to cover your entry."],
+      ["var(--dead)", "<b>The narrative is done.</b> Volume has gone and the reward flow with it. Nobody is coming to pay you for this bag."],
+    ];
+    vDot.style.background = verdicts[i][0];
+    vTxt.innerHTML = verdicts[i][1];
+  }
+
+  const api = makeCanvas(cv, (ctx, w, h) => {
+    W = w; H = h;
+    shown = RM ? pos : lerp(shown, pos, 0.18);
+    const pad = { l: 4, r: 4, t: 16, b: 26 };
+    const gw = w - pad.l - pad.r, gh = h - pad.t - pad.b;
+    const X = (u) => pad.l + u * gw;
+    const Y = (v) => pad.t + (1 - v) * gh;
+    ctx.clearRect(0, 0, w, h);
+
+    // baseline grid
+    ctx.strokeStyle = "rgba(233,240,247,.05)"; ctx.lineWidth = 1;
+    [0, .25, .5, .75, 1].forEach((g) => {
+      ctx.beginPath(); ctx.moveTo(pad.l, Y(g)); ctx.lineTo(w - pad.r, Y(g)); ctx.stroke();
+    });
+
+    // area under the curve, tinted by heat at each x
+    const N = 160;
+    for (let i = 0; i < N; i++) {
+      const u0 = i / N, u1 = (i + 1) / N;
+      const c = heatAt(u0);
+      ctx.beginPath();
+      ctx.moveTo(X(u0), Y(0)); ctx.lineTo(X(u0), Y(burn(u0)));
+      ctx.lineTo(X(u1), Y(burn(u1))); ctx.lineTo(X(u1), Y(0)); ctx.closePath();
+      ctx.fillStyle = rgba(c, 0.075 + burn(u0) * 0.1);
+      ctx.fill();
+    }
+
+    // the curve itself, segment-coloured
+    ctx.lineWidth = 2; ctx.lineCap = "round";
+    for (let i = 0; i < N; i++) {
+      const u0 = i / N, u1 = (i + 1) / N;
+      ctx.beginPath(); ctx.moveTo(X(u0), Y(burn(u0))); ctx.lineTo(X(u1), Y(burn(u1)));
+      ctx.strokeStyle = rgba(heatAt(u0), 0.95); ctx.stroke();
+    }
+
+    // everything ahead of your entry is the flow that still pays you
+    ctx.beginPath();
+    ctx.moveTo(X(shown), Y(0));
+    for (let u = shown; u <= 1.0001; u += 0.01) ctx.lineTo(X(Math.min(u, 1)), Y(burn(Math.min(u, 1))));
+    ctx.lineTo(X(1), Y(0)); ctx.closePath();
+    ctx.fillStyle = "rgba(34,197,94,.1)"; ctx.fill();
+
+    // entry marker
+    const ex = X(shown), ey = Y(burn(shown));
+    ctx.strokeStyle = "rgba(233,240,247,.34)"; ctx.setLineDash([2, 4]); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(ex, pad.t - 8); ctx.lineTo(ex, Y(0)); ctx.stroke(); ctx.setLineDash([]);
+
+    const c = heatAt(shown);
+    ctx.beginPath(); ctx.arc(ex, ey, 13, 0, Math.PI * 2); ctx.fillStyle = rgba(c, .13); ctx.fill();
+    ctx.beginPath(); ctx.arc(ex, ey, 6, 0, Math.PI * 2);
+    ctx.fillStyle = rgba(c, 1); ctx.strokeStyle = "#07090d"; ctx.lineWidth = 2.5; ctx.fill(); ctx.stroke();
+
+    ctx.font = "500 10px 'JetBrains Mono',monospace";
+    ctx.fillStyle = "rgba(233,240,247,.5)"; ctx.textAlign = ex > w - 84 ? "right" : "left";
+    ctx.fillText("YOUR ENTRY", ex > w - 84 ? ex - 11 : ex + 11, pad.t - 1);
+
+    ctx.textAlign = "left";
+    ctx.fillStyle = "rgba(233,240,247,.26)";
+    ctx.fillText("FIRST DETECTED", pad.l + 1, h - 9);
+    ctx.textAlign = "right";
+    ctx.fillText("NARRATIVE OVER", w - pad.r - 1, h - 9);
+  });
+
+  /* pointer + keyboard */
+  let dragging = false;
+  const setFromX = (clientX) => {
+    const r = cv.getBoundingClientRect();
+    pos = clamp((clientX - r.left - 4) / (r.width - 8), 0, 1);
+    sync(); if (RM) api.redraw();
+  };
+  cv.addEventListener("pointerdown", (e) => { dragging = true; cv.setPointerCapture(e.pointerId); setFromX(e.clientX); });
+  cv.addEventListener("pointermove", (e) => { if (dragging) { e.preventDefault(); setFromX(e.clientX); } });
+  ["pointerup", "pointercancel"].forEach((k) => cv.addEventListener(k, () => { dragging = false; }));
+  cv.addEventListener("keydown", (e) => {
+    const step = e.shiftKey ? 0.1 : 0.02;
+    if (e.key === "ArrowLeft") { pos = clamp(pos - step, 0, 1); sync(); e.preventDefault(); }
+    if (e.key === "ArrowRight") { pos = clamp(pos + step, 0, 1); sync(); e.preventDefault(); }
+  });
+
+  sync();
+})();
+
+/* ================================================== 4. prediction market */
+(() => {
+  const up = $("#sideUp"), dn = $("#sideDn"); if (!up) return;
+  const oU = $("#oddsUp"), oD = $("#oddsDn"), bU = $("#barUp"), bD = $("#barDn");
+  const sR = $("#stakeR"), sV = $("#stakeV"), pV = $("#payV"), rV = $("#retV");
+  let side = "up", odds = 62;
+
+  function paint() {
+    const o = Math.round(odds);
+    oU.textContent = o + "%"; oD.textContent = (100 - o) + "%";
+    bU.style.width = o + "%"; bD.style.width = (100 - o) + "%";
+    up.setAttribute("aria-pressed", side === "up");
+    dn.setAttribute("aria-pressed", side === "dn");
+
+    const stake = +sR.value;
+    const p = (side === "up" ? o : 100 - o) / 100;
+    const payout = stake / p;
+    sV.textContent = "$" + stake.toLocaleString("en-US");
+    pV.textContent = "$" + Math.round(payout).toLocaleString("en-US");
+    rV.textContent = "+" + Math.round((payout / stake - 1) * 100) + "%";
+    const col = side === "up" ? "var(--sig)" : "var(--down)";
+    pV.style.color = col; rV.style.color = col;
+  }
+
+  up.addEventListener("click", () => { side = "up"; paint(); });
+  dn.addEventListener("click", () => { side = "dn"; paint(); });
+  sR.addEventListener("input", paint);
+
+  /* Odds drift, because a live book does. Only while the card is on screen. */
+  let timer = 0;
+  new IntersectionObserver((es) => es.forEach((e) => {
+    if (e.isIntersecting && !RM && !timer) {
+      timer = setInterval(() => { odds = clamp(odds + (Math.random() - 0.5) * 2.4, 41, 79); paint(); }, 2600);
+    } else if (!e.isIntersecting && timer) { clearInterval(timer); timer = 0; }
+  }), { rootMargin: "80px" }).observe(up.closest(".mkt"));
+
+  paint();
+})();
+
+/* ================================================== 5. hero scanner rows */
+(() => {
+  const host = $("#scanRows"); if (!host) return;
+  const rows = [
+    { tk: "RCAT", st: 2, ti: "US drone reshoring, tariff catalyst", base: "8.1x", age: "2.1h", mk: "3 markets", sp: [8,9,11,10,14,22,31,44,63,88,104,120] },
+    { tk: "NVDA", st: 1, ti: "Rack-scale supply pulled forward to Q1", base: "3.4x", age: "47m", mk: "5 markets", sp: [40,42,39,45,51,58,66,71,79,86,94,101] },
+    { tk: "HOOD", st: 1, ti: "Prediction volume outruns the equities desk", base: "2.8x", age: "3.5h", mk: "2 markets", sp: [22,24,23,28,30,35,39,42,48,52,55,61] },
+    { tk: "TSLA", st: 0, ti: "Robotaxi permit expands to two metros", base: "1.9x", age: "22m", mk: "no market yet", sp: [15,14,16,15,17,18,21,23,24,27,29,33] },
+  ];
+  const spark = (pts, c) => {
+    const mn = Math.min(...pts), mx = Math.max(...pts), sp = mx - mn || 1;
+    const d = pts.map((p, i) => `${i === 0 ? "M" : "L"}${(i / (pts.length - 1) * 100).toFixed(1)},${(18 - (p - mn) / sp * 15 - 1.5).toFixed(1)}`).join(" ");
+    return `<svg class="spk" viewBox="0 0 100 18" preserveAspectRatio="none" aria-hidden="true"><path d="${d}" fill="none" stroke="${c}" stroke-width="1.3" vector-effect="non-scaling-stroke" stroke-linecap="round"/></svg>`;
+  };
+  host.innerHTML = rows.map((r) => {
+    const s = HEAT[r.st];
+    return `<div class="srow">
+      <div class="top">
+        <span class="tk">${r.tk}</span>
+        <span class="pill" style="color:${s.c};background:color-mix(in oklab, ${s.c} 15%, transparent)">${s.label}</span>
+        <span class="age">${r.age} old</span>
+      </div>
+      <p class="ti" style="margin:0">${r.ti}</p>
+      <div class="bot">
+        ${spark(r.sp, s.c)}
+        <span class="m" style="color:${s.c}">${r.base} baseline</span>
+        <span class="m" style="color:var(--ink-4)">${r.mk}</span>
+      </div>
+    </div>`;
+  }).join("");
+
+  /* Purpose: state indication. The scanner is running while you read. */
+  const rate = $("#scanRate");
+  let n = 1284, timer = 0;
+  new IntersectionObserver((es) => es.forEach((e) => {
+    if (e.isIntersecting && !RM && !timer) {
+      timer = setInterval(() => { n += Math.round(Math.random() * 9); rate.textContent = n.toLocaleString("en-US") + " posts / hr"; }, 2400);
+    } else if (!e.isIntersecting && timer) { clearInterval(timer); timer = 0; }
+  }), {}).observe(host);
+})();
+
+/* ====================================================== 6. reveals + nav */
+(() => {
+  const io = new IntersectionObserver((es) => {
+    es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } });
+  }, { threshold: 0.18, rootMargin: "0px 0px -8% 0px" });
+  document.querySelectorAll(".rv").forEach((n) => io.observe(n));
+
+  // mask lines inside a revealed block animate with it; standalone ones observe themselves
+  document.querySelectorAll(".ml").forEach((n) => { if (!n.closest(".rv")) io.observe(n); });
+
+  /* A sentinel at the top of the document, not a scroll listener. */
+  const nav = $("#nav");
+  const sentinel = document.createElement("div");
+  sentinel.style.cssText = "position:absolute;top:0;left:0;width:1px;height:20px;pointer-events:none";
+  document.body.prepend(sentinel);
+  new IntersectionObserver(([e]) => nav.classList.toggle("solid", !e.isIntersecting)).observe(sentinel);
+
+  const ids = ["top", "scout", "launch", "predict", "close"];
+  const dots = [...document.querySelectorAll("#rail b")];
+  dots.forEach((d) => d.addEventListener("click", () => $("#" + d.dataset.go).scrollIntoView({ behavior: RM ? "auto" : "smooth" })));
+  const spy = new IntersectionObserver((es) => {
+    es.forEach((e) => {
+      if (!e.isIntersecting) return;
+      const i = ids.indexOf(e.target.id);
+      dots.forEach((d, j) => d.classList.toggle("act", j === i));
+    });
+  }, { threshold: 0.5 });
+  ids.forEach((id) => { const el = $("#" + id); if (el) spy.observe(el); });
+})();
+})();
+</script>
+</body>
+</html>

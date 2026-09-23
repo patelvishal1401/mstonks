@@ -1,0 +1,1102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>mstonks terminal, narrative board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- fonts load without blocking the board: the page paints in the fallback stack and swaps when they land -->
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Familjen+Grotesk:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Familjen+Grotesk:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"></noscript>
+<style>
+:root{
+  --bg:#0e1014; --panel:#12151b; --sunk:#0c0d11;
+  --ink:#f6ebd6; --dim:#c9c4b8; --mute:#a7acb6; --faint:#6d7280;
+  --lime:#d4f84a; --red:#f0665a; --purple:#b56cf5; --blue:#7fb3ff;
+  --line:rgba(246,235,214,.14); --hair:rgba(246,235,214,.07);
+  --disp:'Bricolage Grotesque',sans-serif;
+  --body:'Familjen Grotesk',ui-sans-serif,system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+  --nav:74px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);
+  -webkit-font-smoothing:antialiased;overflow-x:hidden}
+main{position:relative;overflow:clip}
+a{color:var(--lime);text-decoration:none}
+::selection{background:var(--lime);color:var(--bg)}
+button,input,select{font:inherit;color:inherit}
+h1,h2,h3{margin:0}
+p{margin:0}
+[hidden]{display:none!important}
+
+@keyframes tape{to{transform:translateX(-50%)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+@keyframes pulse{0%,100%{opacity:.35;transform:scale(1)}50%{opacity:1;transform:scale(1.25)}}
+@keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+@keyframes wire{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pop{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+/* ---------- shared atoms, all lifted from the landing theme ---------- */
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint)}
+.mono{font-family:var(--mono)}
+.wrap{max-width:1400px;margin:0 auto;padding:0 clamp(18px,3vw,40px)}
+#board{scroll-margin-top:calc(var(--nav) + 18px)}
+.pill{display:inline-flex;align-items:center;gap:8px;border:1.5px solid var(--line);border-radius:999px;
+  padding:7px 13px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  font-weight:700;color:var(--mute);background:transparent;cursor:pointer;white-space:nowrap;
+  transition:border-color .2s,color .2s,background .2s}
+.pill:hover{border-color:var(--ink);color:var(--ink)}
+.pill[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.cta{display:inline-flex;align-items:center;justify-content:center;gap:10px;height:46px;padding:0 22px;
+  background:var(--lime);color:var(--bg);border:0;border-radius:999px;font-weight:700;font-size:15px;
+  letter-spacing:-.01em;cursor:pointer;white-space:nowrap;
+  transition:transform .2s cubic-bezier(.2,.8,.2,1),background .2s}
+.cta:hover{transform:translateY(-2px) rotate(-1.2deg)}
+.cta:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.cta.ghost{background:transparent;color:var(--ink);border:1.5px solid rgba(246,235,214,.35)}
+.cta.ghost:hover{border-color:var(--ink);transform:translateY(-2px)}
+.cta.purple{background:var(--purple)}
+.panel{background:var(--panel);border:1.5px solid var(--line);border-radius:20px}
+.state{display:inline-flex;align-items:center;gap:6px;border:1.5px solid currentColor;border-radius:999px;
+  padding:3px 9px;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+
+/* ---------- nav ---------- */
+header.nav{position:fixed;top:0;left:0;right:0;z-index:60;display:flex;align-items:center;gap:28px;
+  padding:16px clamp(18px,3vw,40px);background:linear-gradient(180deg,rgba(14,16,20,.95),rgba(14,16,20,.72) 70%,rgba(14,16,20,0));
+  backdrop-filter:blur(8px)}
+.lock{display:inline-flex;align-items:flex-start;gap:3px;color:var(--lime)}
+.lock span{font-family:var(--disp);font-weight:800;font-size:30px;letter-spacing:-.055em;line-height:1;
+  font-variation-settings:'opsz' 96,'wdth' 90}
+.lock svg{margin-top:-6px}
+.navlinks{display:flex;gap:22px;margin-left:8px;font-size:14px;font-weight:500}
+.navlinks a{color:var(--mute)}
+.navlinks a:hover,.navlinks a[aria-current="page"]{color:var(--ink)}
+.soon{display:inline-flex;align-items:center;gap:7px;color:var(--faint);cursor:default;white-space:nowrap}
+.soon em{font-style:normal;font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;
+  border:1px solid rgba(246,235,214,.22);border-radius:999px;padding:2px 6px;color:var(--faint)}
+@media(max-width:820px){.soon{display:none}}
+@media(max-width:560px){
+  header.nav{gap:12px;padding:12px 14px}
+  .navlinks{gap:14px;margin-left:0;font-size:13px}
+  .lock span{font-size:24px}
+  .navright{gap:8px}
+  .navright .cta{height:38px;padding:0 14px;font-size:13px}
+}
+@media(max-width:400px){
+  header.nav{gap:10px;padding:12px 12px}
+  .navlinks{gap:12px;font-size:12.5px}
+  .lock span{font-size:21px}
+  .navright .cta{padding:0 12px;font-size:12.5px}
+}
+.navright{margin-left:auto;display:flex;align-items:center;gap:12px}
+.clock{display:none;align-items:center;gap:10px;border:1.5px solid rgba(212,248,74,.35);border-radius:999px;
+  padding:7px 14px;background:rgba(14,16,20,.55);font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--faint);white-space:nowrap}
+.clock b{color:var(--lime);font-weight:700;letter-spacing:.04em}
+@media(min-width:900px){.clock{display:inline-flex}}
+.wallet{height:42px;padding:0 18px;font-size:14px}
+.wallet.on{background:transparent;border:1.5px solid var(--lime);color:var(--lime);font-family:var(--mono);font-size:12px}
+
+/* ---------- page head ---------- */
+.head{padding:calc(var(--nav) + clamp(26px,4vh,44px)) 0 0}
+.head h1{font-family:var(--disp);font-weight:800;font-variation-settings:'opsz' 96,'wdth' 80;
+  font-size:clamp(36px,5.2vw,74px);line-height:.92;letter-spacing:-.05em;text-transform:uppercase;
+  text-wrap:balance;margin:16px 0 0;max-width:20ch}
+.head h1 i{font-style:italic;color:var(--lime);font-variation-settings:'opsz' 96,'wdth' 75}
+.head p.sub{margin:18px 0 0;max-width:62ch;font-size:clamp(16px,1.4vw,19px);line-height:1.45;color:var(--dim);text-wrap:pretty}
+.stats{display:flex;flex-wrap:wrap;gap:clamp(22px,3.4vw,46px);margin-top:26px;font-family:var(--mono)}
+.stats .n{font-size:clamp(26px,2.6vw,32px);font-weight:700;letter-spacing:-.04em;line-height:1}
+.stats .k{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-top:6px}
+
+/* ---------- torn tape ---------- */
+.tape{position:relative;z-index:2;margin:clamp(26px,3.6vw,42px) -6vw 0;transform:rotate(-1.6deg);
+  background:var(--lime);color:var(--bg);overflow:hidden;padding:12px 0 15px;
+  clip-path:polygon(0 8%,2% 0,4% 10%,6% 2%,8% 9%,10% 1%,12% 8%,14% 0,16% 10%,18% 3%,20% 9%,22% 0,24% 8%,26% 2%,28% 10%,30% 1%,32% 8%,34% 0,36% 9%,38% 3%,40% 10%,42% 1%,44% 8%,46% 0,48% 9%,50% 2%,52% 10%,54% 0,56% 8%,58% 3%,60% 9%,62% 1%,64% 10%,66% 0,68% 8%,70% 2%,72% 9%,74% 0,76% 10%,78% 3%,80% 8%,82% 1%,84% 9%,86% 0,88% 10%,90% 2%,92% 8%,94% 0,96% 9%,98% 3%,100% 8%,100% 92%,98% 100%,96% 90%,94% 98%,92% 91%,90% 100%,88% 92%,86% 99%,84% 90%,82% 97%,80% 91%,78% 100%,76% 92%,74% 98%,72% 90%,70% 99%,68% 92%,66% 100%,64% 91%,62% 98%,60% 90%,58% 97%,56% 92%,54% 100%,52% 91%,50% 98%,48% 90%,46% 99%,44% 92%,42% 100%,40% 91%,38% 98%,36% 90%,34% 97%,32% 92%,30% 100%,28% 91%,26% 98%,24% 90%,22% 99%,20% 92%,18% 100%,16% 91%,14% 98%,12% 90%,10% 97%,8% 92%,6% 100%,4% 91%,2% 98%,0 92%)}
+.tape .run{display:flex;width:max-content;animation:tape 42s linear infinite;font-family:var(--mono);
+  font-weight:700;font-size:14px;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.tape .run>span{display:flex;gap:42px;padding-right:42px}
+
+/* ---------- tabs + filters ---------- */
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:clamp(30px,3.8vw,48px)}
+.tabs{display:flex;gap:2px;background:var(--line);border:1.5px solid var(--line);border-radius:999px;padding:2px;overflow:hidden}
+.tab{border:0;background:transparent;color:var(--mute);font-family:var(--mono);font-size:11px;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;padding:10px 16px;border-radius:999px;cursor:pointer;white-space:nowrap;
+  transition:background .2s,color .2s}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+.tab .count{color:inherit;opacity:.6;margin-left:6px}
+.filters{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:18px}
+.search{display:flex;align-items:center;gap:8px;border:1.5px solid var(--line);border-radius:999px;padding:0 14px;height:38px;
+  background:var(--panel)}
+.search input{border:0;background:transparent;outline:0;font-family:var(--mono);font-size:12px;width:190px}
+.search input::placeholder{color:var(--faint)}
+.sort{height:38px;border:1.5px solid var(--line);border-radius:999px;background:var(--panel);padding:0 14px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+.spacer{flex:1}
+
+/* ---------- board ---------- */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,380px),1fr));gap:16px;
+  margin-top:22px;padding-bottom:clamp(60px,8vw,110px)}
+.card{position:relative;display:flex;flex-direction:column;background:var(--panel);border:1.5px solid var(--line);
+  border-radius:20px;overflow:hidden;animation:rise .5s cubic-bezier(.2,.8,.2,1) both;
+  transition:transform .35s cubic-bezier(.2,.8,.2,1),border-color .25s,box-shadow .35s}
+.card:hover{transform:translateY(-4px);border-color:rgba(246,235,214,.3);box-shadow:0 30px 60px rgba(0,0,0,.5)}
+.card .top{display:flex;align-items:center;gap:10px;padding:16px 18px 0}
+.tick{font-family:var(--mono);font-weight:700;font-size:15px}
+.card .age{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--faint)}
+.card h3{margin:12px 18px 0;font-size:19px;font-weight:600;line-height:1.3;letter-spacing:-.01em;text-wrap:pretty}
+.card .why{margin:8px 18px 0;font-size:14px;line-height:1.5;color:var(--mute);text-wrap:pretty}
+.mom{display:flex;align-items:flex-end;gap:14px;margin:16px 18px 0}
+.mom .big{font-family:var(--mono);font-size:34px;font-weight:700;letter-spacing:-.05em;line-height:.9}
+.mom .lab{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-bottom:5px}
+.mom svg{margin-left:auto;margin-bottom:2px}
+.bars{height:4px;background:rgba(246,235,214,.1);border-radius:999px;margin:12px 18px 0;overflow:hidden}
+.bars i{display:block;height:100%;border-radius:999px;transition:width .6s cubic-bezier(.2,.8,.2,1)}
+.kv{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--hair);margin-top:16px;border-top:1px solid var(--hair)}
+.kv div{background:var(--panel);padding:12px 10px;text-align:center}
+.kv b{display:block;font-family:var(--mono);font-size:15px;font-weight:700;letter-spacing:-.02em}
+.kv span{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-top:5px}
+.foot{display:flex;align-items:center;gap:10px;padding:14px 18px;border-top:1px solid var(--hair);background:var(--sunk)}
+.foot .src{font-family:var(--mono);font-size:11px;color:var(--faint);line-height:1.4}
+.foot .cta{margin-left:auto;height:40px;padding:0 18px;font-size:14px}
+.taken{margin-left:auto;display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11px;
+  font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--lime)}
+.empty{border:1.5px dashed var(--line);border-radius:20px;padding:clamp(34px,6vw,64px);text-align:center;margin-top:22px}
+.empty h3{font-family:var(--disp);font-weight:800;font-size:clamp(24px,3.4vw,40px);letter-spacing:-.04em;text-transform:uppercase}
+.empty p{margin-top:12px;color:var(--mute);font-size:15px}
+
+/* ---------- waitlist ---------- */
+.wgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,268px),1fr));gap:16px;margin-top:22px;
+  padding-bottom:clamp(60px,8vw,110px)}
+.res{background:var(--panel);border:1.5px solid var(--line);border-radius:18px;overflow:hidden;
+  animation:pop .45s cubic-bezier(.2,.8,.2,1) both;transition:transform .3s,border-color .3s}
+.res:hover{transform:translateY(-3px)}
+.res.mine{border-color:var(--lime)}
+.res .art{display:block;width:100%;aspect-ratio:1/.86;background:var(--sunk)}
+.res .body{padding:14px 16px 16px}
+.res .nm{font-family:var(--disp);font-weight:800;font-size:23px;letter-spacing:-.04em;line-height:1;text-transform:uppercase}
+.res .sy{font-family:var(--mono);font-weight:700;font-size:14px;margin-top:5px}
+.res .meta{border-top:1px solid var(--hair);margin-top:11px;padding-top:10px;display:flex;flex-direction:column;gap:6px;
+  font-family:var(--mono);font-size:11px;color:var(--mute)}
+.res .meta i{font-style:normal;color:var(--faint)}
+.res .meta span{display:flex;justify-content:space-between;gap:10px}
+.qbadge{position:absolute;top:12px;left:12px}
+.reshead{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-top:22px}
+
+/* ---------- agent drawer ---------- */
+.scrim{position:fixed;inset:0;background:rgba(6,7,10,.72);backdrop-filter:blur(3px);z-index:70;opacity:0;
+  pointer-events:none;transition:opacity .3s}
+.scrim.on{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(480px,100vw);z-index:80;background:var(--bg);
+  border-left:1.5px solid var(--line);display:flex;flex-direction:column;transform:translateX(102%);
+  transition:transform .42s cubic-bezier(.2,.8,.2,1)}
+.drawer.on{transform:none}
+@media(max-width:560px){.drawer{width:100vw;top:auto;height:92vh;border-left:0;border-top:1.5px solid var(--line);
+  border-radius:22px 22px 0 0;transform:translateY(102%)}}
+.dhead{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line)}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--lime);color:var(--bg);display:grid;place-items:center;
+  font-family:var(--disp);font-weight:800;font-size:17px;flex:none}
+.dhead .t{font-weight:600;font-size:15px;letter-spacing:-.01em}
+.dhead .s{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--lime);
+  display:flex;align-items:center;gap:6px;margin-top:3px}
+.dhead .s i{width:6px;height:6px;border-radius:50%;background:var(--lime);animation:pulse 1.6s infinite}
+.x{margin-left:auto;width:34px;height:34px;border-radius:50%;border:1.5px solid var(--line);background:transparent;
+  cursor:pointer;display:grid;place-items:center;color:var(--mute);transition:border-color .2s,color .2s}
+.x:hover{border-color:var(--ink);color:var(--ink)}
+.log{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:14px;scroll-behavior:smooth}
+.msg{max-width:88%;animation:wire .4s cubic-bezier(.2,.8,.2,1) both}
+.msg.bot .b{background:var(--panel);border:1.5px solid var(--line);border-radius:16px 16px 16px 5px;padding:13px 15px;
+  font-size:15px;line-height:1.5;color:var(--dim)}
+.msg.me{align-self:flex-end}
+.msg.me .b{background:rgba(212,248,74,.12);border:1.5px solid rgba(212,248,74,.4);color:var(--ink);
+  border-radius:16px 16px 5px 16px;padding:13px 15px;font-size:15px;line-height:1.5}
+.msg b{color:var(--ink)}
+.typing{display:flex;gap:5px;padding:16px 15px}
+.typing i{width:7px;height:7px;border-radius:50%;background:var(--faint);animation:pulse 1.1s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+.chips{display:flex;flex-wrap:wrap;gap:8px;padding:0 18px 14px}
+.chips .pill{font-size:10.5px;padding:8px 12px;background:var(--panel)}
+.ask{display:flex;gap:8px;padding:14px 18px;border-top:1px solid var(--line);background:var(--sunk)}
+.ask input{flex:1;height:44px;border:1.5px solid var(--line);border-radius:999px;background:var(--panel);
+  padding:0 16px;outline:0;font-size:14px}
+.ask input:focus{border-color:rgba(212,248,74,.5)}
+.ask button{width:44px;height:44px;border-radius:50%;border:0;background:var(--lime);color:var(--bg);cursor:pointer;
+  display:grid;place-items:center;flex:none;transition:transform .2s}
+.ask button:hover{transform:translateY(-2px)}
+
+/* token proposal card inside the chat */
+.tokencard{border:1.5px solid var(--line);border-radius:18px;overflow:hidden;background:var(--panel);
+  animation:pop .45s cubic-bezier(.2,.8,.2,1) both}
+.tokencard.approve{border-color:var(--lime)}
+.tokencard .hd{display:flex;align-items:center;gap:8px;padding:11px 14px;border-bottom:1px solid var(--hair);
+  font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.tokencard .row{display:flex;gap:14px;padding:14px}
+.tokencard .row img,.tokencard .row .art{width:92px;height:92px;border-radius:12px;flex:none;border:2px solid var(--line)}
+.tokencard .nm{font-family:var(--disp);font-weight:800;font-size:26px;line-height:1;letter-spacing:-.045em;text-transform:uppercase}
+.tokencard .sy{font-family:var(--mono);font-weight:700;font-size:14px;margin-top:5px}
+.tokencard .ds{font-size:13px;line-height:1.45;color:var(--mute);margin-top:8px;text-wrap:pretty}
+.terms{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--hair);border-top:1px solid var(--hair)}
+.terms div{background:var(--panel);padding:11px 14px}
+.terms span{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+.terms b{display:block;font-family:var(--mono);font-size:13px;font-weight:700;margin-top:5px}
+.split{display:flex;height:12px;gap:2px;margin:0 14px 6px;border-radius:999px;overflow:hidden}
+.splitk{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--mute);padding:0 14px 14px}
+.acts{display:flex;gap:8px;padding:0 14px 14px}
+.acts .cta{flex:1;height:44px;font-size:14px}
+.wallets{display:flex;flex-direction:column;gap:8px;padding:0 14px 14px}
+.wrow{display:flex;align-items:center;gap:12px;height:52px;padding:0 14px;border:1.5px solid var(--line);
+  border-radius:14px;background:var(--sunk);cursor:pointer;font-weight:600;font-size:15px;text-align:left;
+  transition:border-color .2s,transform .2s}
+.wrow:hover{border-color:var(--lime);transform:translateX(3px)}
+.wrow i{width:26px;height:26px;border-radius:8px;flex:none;display:block}
+.wrow em{margin-left:auto;font-style:normal;font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--faint)}
+.done{text-align:center;padding:22px 16px}
+.done .mark{width:62px;height:62px;border-radius:50%;background:var(--lime);color:var(--bg);display:grid;
+  place-items:center;margin:0 auto 16px;animation:pop .5s cubic-bezier(.2,.8,.2,1) both}
+.done h4{font-family:var(--disp);font-weight:800;font-size:30px;letter-spacing:-.045em;text-transform:uppercase;margin:0}
+.done .sub{font-size:14px;color:var(--mute);margin-top:10px;line-height:1.5}
+.rid{font-family:var(--mono);font-size:12px;color:var(--lime);margin-top:14px;letter-spacing:.08em}
+.links{display:flex;flex-direction:column;gap:8px;padding:6px 14px 16px}
+.note{display:flex;gap:9px;margin:0 14px 14px;padding:11px 13px;border:1.5px solid rgba(240,102,90,.4);
+  border-radius:12px;background:rgba(240,102,90,.07);font-size:12.5px;line-height:1.45;color:var(--dim)}
+.note b{color:var(--red)}
+
+/* ---------- footer ---------- */
+footer{border-top:1px solid rgba(246,235,214,.12);padding:34px 0 40px;font-size:12.5px;line-height:1.65;color:var(--faint)}
+footer .in{display:flex;flex-wrap:wrap;gap:26px;justify-content:space-between}
+footer p{max-width:92ch;text-wrap:pretty}
+footer b{color:var(--mute)}
+footer .lk{display:flex;gap:18px;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+footer .lk a{color:var(--mute)}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <a class="lock" href="../landing/v3.html" aria-label="mstonks home">
+    <span>mstonks</span>
+    <svg width="18" height="16" viewBox="0 0 28 24" fill="none" stroke="#d4f84a" stroke-width="3" stroke-linejoin="round"><path d="M3 20 5 6l7 7 2-10 2 10 7-7 2 14z"/></svg>
+  </a>
+  <nav class="navlinks">
+    <a href="v1.html" aria-current="page">Board</a>
+    <a href="../docs/v1.html">Docs</a>
+    <span class="soon">Predict <em>Soon</em></span>
+    <span class="soon">Rewards <em>Soon</em></span>
+  </nav>
+  <div class="navright">
+    <div class="clock">Launch in <b id="cdNav">--</b></div>
+    <button class="cta wallet on" id="walletChip" type="button" hidden></button>
+    <button class="cta wallet" id="launchBtn" type="button">Launch token</button>
+  </div>
+</header>
+
+<main>
+  <section class="wrap head">
+    <div class="eyebrow" style="color:#d4f84a;display:flex;align-items:center;gap:9px">
+      <span style="width:7px;height:7px;border-radius:50%;background:#d4f84a;animation:blink 1.4s infinite"></span>
+      Narrative board · agents scanning live
+    </div>
+    <h1>Pick the story. <i>Reserve the ticker.</i></h1>
+    <p class="sub">Our agents read the wire around the clock and score every stock narrative before a token exists.
+      Reserve a launch on the one you believe in, and when the launchpad goes live you are the scout on record:
+      30% of every trade fee, plus stock rewards on the pair.</p>
+    <div class="stats">
+      <div><div class="n" style="color:#d4f84a" id="sNarr">0</div><div class="k">Narratives live</div></div>
+      <div><div class="n" id="sRate">0</div><div class="k">Posts / hr scanned</div></div>
+      <div><div class="n" id="sRes">0</div><div class="k">Launches reserved</div></div>
+      <div><div class="n" style="color:#f0665a" id="sLeft">0</div><div class="k">Slots left</div></div>
+    </div>
+  </section>
+
+  <div class="tape" aria-hidden="true">
+    <div class="run">
+      <span><span>Reservations are free</span><span>Scout keeps 30% of fees</span><span>50% back to holders in stock</span><span>LP locked forever</span><span>Hold expires 24h after launch</span><span>Base + Robinhood Chain</span><span>One reservation per narrative</span></span>
+      <span><span>Reservations are free</span><span>Scout keeps 30% of fees</span><span>50% back to holders in stock</span><span>LP locked forever</span><span>Hold expires 24h after launch</span><span>Base + Robinhood Chain</span><span>One reservation per narrative</span></span>
+    </div>
+  </div>
+
+  <section class="wrap" id="board">
+    <div class="bar">
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" aria-selected="true" data-tab="board">Narratives<span class="count" id="cBoard"></span></button>
+        <button class="tab" role="tab" aria-selected="false" data-tab="wait">Launch waitlist<span class="count" id="cWait"></span></button>
+        <button class="tab" role="tab" aria-selected="false" data-tab="mine">Yours<span class="count" id="cMine"></span></button>
+      </div>
+      <div class="spacer"></div>
+      <div class="search" id="searchWrap">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#6d7280" stroke-width="2" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14"/></svg>
+        <input id="q" type="search" placeholder="Stock or keyword" aria-label="Search narratives">
+      </div>
+      <select class="sort" id="sort" aria-label="Sort narratives">
+        <option value="momentum">Sort · Momentum</option>
+        <option value="posts">Sort · Posts 24h</option>
+        <option value="velocity">Sort · Velocity 1h</option>
+        <option value="baseline">Sort · Baseline multiple</option>
+        <option value="ignition">Sort · Newest ignition</option>
+      </select>
+    </div>
+
+    <div class="filters" id="states"></div>
+
+    <div id="paneBoard">
+      <div class="grid" id="grid"></div>
+    </div>
+
+    <div id="paneWait" hidden>
+      <div class="reshead">
+        <div>
+          <div class="eyebrow">Launch waitlist</div>
+          <p style="margin-top:8px;color:#c9c4b8;font-size:15px;max-width:60ch">Every reservation confirmed so far, newest first.
+            Each card holds its narrative and stock pair until 24 hours after the launchpad opens.</p>
+        </div>
+      </div>
+      <div class="wgrid" id="waitGrid"></div>
+    </div>
+
+    <div id="paneMine" hidden>
+      <div id="mineEmpty" class="empty">
+        <h3>No slot held yet</h3>
+        <p>Pick a narrative on the board and the scout agent will do the rest. It takes about a minute.</p>
+        <button class="cta" type="button" style="margin-top:22px" data-goboard>Back to the board</button>
+      </div>
+      <div class="wgrid" id="mineGrid" hidden></div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap in">
+    <p><b>mstonks terminal.</b> Reserving a launch costs nothing and mints nothing. It records your wallet as the
+      scout for that narrative and holds the pair until 24 hours after the launchpad opens.<br><br>
+      <b>Not investment advice.</b> Memestocks launched on mstonks are community tokens. A token referencing a company
+      is parody or commentary. It is not equity, not an endorsement, and carries no claim on any issuer. Narrative
+      scores are decision support derived from public news and post counts, not a prediction. Tokenized-stock
+      functionality is geofenced by issuer and venue eligibility. Narratives, wallets and reservations on this page
+      are illustrative.</p>
+    <div class="lk"><a href="#board">Terms</a><a href="#board">Privacy</a><a href="#board">Disclosures</a></div>
+  </div>
+</footer>
+
+<div class="scrim" id="scrim"></div>
+
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="Scout agent">
+  <div class="dhead">
+    <div class="avatar">m</div>
+    <div>
+      <div class="t">Scout agent</div>
+      <div class="s"><i></i>Online</div>
+    </div>
+    <button class="x" id="closeDrawer" type="button" aria-label="Close">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3l10 10M13 3 3 13"/></svg>
+    </button>
+  </div>
+  <div class="log" id="log"></div>
+  <div class="chips" id="chips"></div>
+  <form class="ask" id="ask">
+    <input id="say" autocomplete="off" placeholder="Tell the agent what to change">
+    <button type="submit" aria-label="Send">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8h11M9 3.5 13.5 8 9 12.5"/></svg>
+    </button>
+  </form>
+</aside>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ----------------------------------------------------------------
+     Narrative fixtures. Field names follow the PRD's xs_narratives
+     vocabulary: momentum_score, lifecycle_state, current_rate,
+     velocity_1h, baseline (novelty) multiple, ignition age, sources.
+     ---------------------------------------------------------------- */
+  var STATES = {
+    EMERGING:     { c: '#7fb3ff', label: 'Emerging' },
+    ACCELERATING: { c: '#d4f84a', label: 'Accelerating' },
+    BREAKOUT:     { c: '#f0665a', label: 'Breakout' },
+    PEAKING:      { c: '#b56cf5', label: 'Peaking' },
+    FADING:       { c: '#6d7280', label: 'Fading' }
+  };
+  var CUSTOM = { c: '#f6ebd6', label: 'Unscored' };
+  function st(k) { return STATES[k] || CUSTOM; }
+
+  var NARRATIVES = [
+    { id: 'nar_rcat_01', stock: 'RCAT', state: 'BREAKOUT', momentum: 91, launchability: 78,
+      title: 'Drone reshoring contract lands ahead of tariff deadline',
+      why: 'Three defence outlets and a procurement filing landed inside 90 minutes. Post volume is 8x its own baseline and still climbing.',
+      rate: 620, v1: 2.4, v3: 4.1, baseline: 8.1, ignition: '2.1h', ignitionMin: 126,
+      posts24: 14200, likes: 98300, reposts: 21400, news: 12, xsample: 36, markets: 0,
+      spark: [8, 9, 11, 14, 22, 31, 44, 63, 88, 104, 120],
+      names: [['Redcat', 'REDCAT', 'Reshored, rearmed and permanently airborne.'],
+              ['Dronefather', 'DRONEDAD', 'Every supply chain comes home eventually.'],
+              ['Tariffbird', 'TBIRD', 'Made here. Flies anywhere.']] },
+
+    { id: 'nar_nvda_01', stock: 'NVDA', state: 'BREAKOUT', momentum: 88, launchability: 84,
+      title: 'Robots learn new tasks from a single video',
+      why: 'A demo clip crossed 40k reposts overnight and every AI newsletter picked it up by morning. The lab account has not even replied yet.',
+      rate: 540, v1: 2.1, v3: 3.6, baseline: 6.4, ignition: '3.4h', ignitionMin: 204,
+      posts24: 12900, likes: 141000, reposts: 38200, news: 9, xsample: 41, markets: 0,
+      spark: [12, 14, 18, 26, 38, 52, 70, 86, 99, 112, 118],
+      names: [['Copybot', 'COPY', 'Watched once. Took your job.'],
+              ['Onetake', 'ONETAKE', 'It only needs to see it happen once.'],
+              ['Handsfree', 'HANDS', 'The demo was the interview.']] },
+
+    { id: 'nar_aapl_01', stock: 'AAPL', state: 'ACCELERATING', momentum: 74, launchability: 81,
+      title: 'Apple enters foldable phones',
+      why: 'Supply chain leak plus a teardown thread. Sentiment is split between hype and hinge jokes, which is exactly where memes do well.',
+      rate: 410, v1: 1.8, v3: 2.4, baseline: 3.4, ignition: '47m', ignitionMin: 47,
+      posts24: 9800, likes: 76400, reposts: 15900, news: 7, xsample: 28, markets: 0,
+      spark: [40, 42, 39, 45, 51, 58, 66, 71, 79, 86, 101],
+      names: [['iFold', 'IFOLD', 'Phone folds. Hands don’t.'],
+              ['Creasecoin', 'CREASE', 'The crease is a feature.'],
+              ['Bendy', 'BENDY', 'Ten years of flat was enough.']] },
+
+    { id: 'nar_hood_01', stock: 'HOOD', state: 'ACCELERATING', momentum: 71, launchability: 69,
+      title: 'Prediction volume outruns the equities desk',
+      why: 'Quarterly disclosure showed event contracts beating equities revenue. Fintech twitter has been arguing about it since the open.',
+      rate: 355, v1: 1.6, v3: 2.2, baseline: 2.8, ignition: '3.5h', ignitionMin: 210,
+      posts24: 7600, likes: 42100, reposts: 9800, news: 11, xsample: 22, markets: 0,
+      spark: [22, 24, 23, 28, 30, 35, 39, 42, 48, 52, 61],
+      names: [['Sidebet', 'SIDEBET', 'The side bet became the business.'],
+              ['Eventhorizon', 'EVENT', 'Everything is a market now.'],
+              ['Deskless', 'DESK', 'No desk, no problem.']] },
+
+    { id: 'nar_tsla_01', stock: 'TSLA', state: 'EMERGING', momentum: 62, launchability: 88,
+      title: 'Roadster reveal set for Oct 1',
+      why: 'One founder post, no press cycle yet. Reply guys are already making calendar jokes, which is the tell we score highest.',
+      rate: 210, v1: 2.9, v3: 1.9, baseline: 1.9, ignition: '22m', ignitionMin: 22,
+      posts24: 3400, likes: 51800, reposts: 12600, news: 3, xsample: 17, markets: 0,
+      spark: [15, 14, 16, 15, 17, 18, 21, 23, 24, 27, 33],
+      names: [['Roadsoon', 'SOON', 'Zero to sixty. Eventually.'],
+              ['Deliverydate', 'DATE', 'The date moves. The bag stays.'],
+              ['Nextquarter', 'NEXTQ', 'It ships next quarter. Always.']] },
+
+    { id: 'nar_coin_01', stock: 'COIN', state: 'PEAKING', momentum: 84, launchability: 62,
+      title: 'Tokenized stocks open to non-US wallets',
+      why: 'Ran hot for six hours and is now flattening against its own peak. Still the highest narrative share on the board.',
+      rate: 470, v1: 0.8, v3: 1.1, baseline: 5.2, ignition: '6.1h', ignitionMin: 366,
+      posts24: 11200, likes: 64900, reposts: 18300, news: 15, xsample: 33, markets: 0,
+      spark: [30, 40, 55, 70, 90, 104, 110, 112, 111, 109, 106],
+      names: [['Wrappedwall', 'WALLST', 'Wall Street, now in a wallet.'],
+              ['Offshore', 'OFFSHR', 'Everyone else got there first.'],
+              ['Tokenised', 'TKNSD', 'The ticker escaped the exchange.']] },
+
+    { id: 'nar_pltr_01', stock: 'PLTR', state: 'EMERGING', momentum: 58, launchability: 73,
+      title: 'Agent stack quietly ships to a second agency',
+      why: 'A procurement notice nobody covered yet. Two accounts with real reach found it in the last hour.',
+      rate: 168, v1: 2.2, v3: 1.5, baseline: 1.6, ignition: '38m', ignitionMin: 38,
+      posts24: 2600, likes: 18400, reposts: 4100, news: 4, xsample: 11, markets: 0,
+      spark: [9, 9, 10, 11, 12, 13, 15, 17, 19, 22, 26],
+      names: [['Quietcontract', 'QUIET', 'The deal nobody wrote about.'],
+              ['Procure', 'PROC', 'Filed on a Friday, found on a Sunday.'],
+              ['Agencymaxxing', 'AGENCY', 'One agency down, the rest to go.']] },
+
+    { id: 'nar_smci_01', stock: 'SMCI', state: 'FADING', momentum: 34, launchability: 44,
+      title: 'Rack shortage eases as a second supplier qualifies',
+      why: 'Peaked yesterday afternoon and has given back most of it. Kept on the board for reference, not for launching.',
+      rate: 74, v1: 0.4, v3: 0.6, baseline: 1.2, ignition: '21h', ignitionMin: 1260,
+      posts24: 1900, likes: 8600, reposts: 1700, news: 6, xsample: 8, markets: 0,
+      spark: [70, 66, 58, 49, 41, 34, 30, 26, 23, 21, 19],
+      names: [['Rackattack', 'RACK', 'The shortage that stopped being one.'],
+              ['Secondsource', 'SRC2', 'Always a second supplier.'],
+              ['Coolingoff', 'COOL', 'It cooled. Literally.']] },
+
+    { id: 'nar_mstr_01', stock: 'MSTR', state: 'ACCELERATING', momentum: 77, launchability: 91,
+      title: 'Treasury adds on a red candle again',
+      why: 'The buy-the-dip post is doing numbers and the quote tweets are funnier than the original, which is how these run.',
+      rate: 392, v1: 1.9, v3: 2.7, baseline: 3.9, ignition: '1.4h', ignitionMin: 84,
+      posts24: 8900, likes: 88200, reposts: 24600, news: 5, xsample: 26, markets: 0,
+      spark: [28, 31, 30, 36, 44, 52, 58, 67, 74, 83, 94],
+      names: [['Reddip', 'REDDIP', 'Red day, same button.'],
+              ['Treasurybro', 'TBRO', 'The balance sheet is a personality.'],
+              ['Buymore', 'BUYMORE', 'There was never a sell plan.']] },
+
+    { id: 'nar_lmt_01', stock: 'LMT', state: 'EMERGING', momentum: 55, launchability: 58,
+      title: 'Counter-drone budget line doubles in draft markup',
+      why: 'Committee draft hit an hour ago. Defence accounts are reading the PDF live, mainstream coverage has not started.',
+      rate: 142, v1: 2.6, v3: 1.4, baseline: 1.5, ignition: '16m', ignitionMin: 16,
+      posts24: 2100, likes: 12900, reposts: 3400, news: 2, xsample: 9, markets: 0,
+      spark: [6, 6, 7, 8, 8, 10, 12, 13, 16, 19, 24],
+      names: [['Markupseason', 'MARKUP', 'Line item goes brrr.'],
+              ['Counterdrone', 'CDRONE', 'Someone has to shoot them down.'],
+              ['Draftbudget', 'DRAFT', 'Written in pencil, priced in ink.']] }
+  ];
+
+  var SEED_WAITLIST = [
+    { name: 'Chipfam', sym: 'CHIPFAM', stock: 'NVDA', chain: 'base', narrative: 'Robots learn new tasks from a single video', mcap: 25000, fee: 2, scout: '0x8f2…4a1', q: 1, seed: 118 },
+    { name: 'Foldgang', sym: 'FOLDG', stock: 'AAPL', chain: 'base', narrative: 'Apple enters foldable phones', mcap: 25000, fee: 2, scout: '0x31c…be9', q: 2, seed: 47 },
+    { name: 'Skydad', sym: 'SKYDAD', stock: 'RCAT', chain: 'rh', narrative: 'Drone reshoring contract lands ahead of tariff deadline', mcap: 40000, fee: 3, scout: '0xa07…512', q: 3, seed: 203 },
+    { name: 'Eventpilled', sym: 'EVNTP', stock: 'HOOD', chain: 'base', narrative: 'Prediction volume outruns the equities desk', mcap: 25000, fee: 2, scout: '0x6d4…c88', q: 4, seed: 76 },
+    { name: 'Orangecandle', sym: 'ORNGE', stock: 'MSTR', chain: 'base', narrative: 'Treasury adds on a red candle again', mcap: 25000, fee: 1, scout: '0xff1…09d', q: 5, seed: 159 },
+    { name: 'Latecycle', sym: 'LATE', stock: 'COIN', chain: 'rh', narrative: 'Tokenized stocks open to non-US wallets', mcap: 60000, fee: 2, scout: '0x2b9…730', q: 6, seed: 22 }
+  ];
+
+  var SLOTS = 250;
+  var state = { filter: 'ALL', sort: 'momentum', q: '', tab: 'board', rate: 3128, wallet: null };
+  var waitlist = SEED_WAITLIST.slice();
+  var mine = [];
+  var $ = function (s) { return document.querySelector(s); };
+  var money = function (v) { return '$' + Math.round(v).toLocaleString('en-US'); };
+  var kfmt = function (v) { return v >= 1000 ? (v / 1000).toFixed(v >= 10000 ? 0 : 1).replace('.0', '') + 'k' : String(v); };
+  var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); };
+
+  function sparkPath(pts) {
+    var mn = Math.min.apply(null, pts), mx = Math.max.apply(null, pts), sp = mx - mn || 1;
+    return pts.map(function (p, i) {
+      return (i ? 'L' : 'M') + (i / (pts.length - 1) * 100).toFixed(1) + ',' + (28 - (p - mn) / sp * 24 - 2).toFixed(1);
+    }).join(' ');
+  }
+
+  /* deterministic token art, so a symbol always draws the same card */
+  function art(seed, color, sym, size) {
+    var r = function (n) { seed = (seed * 9301 + 49297) % 233280; return Math.floor(seed / 233280 * n); };
+    var dots = '', i, rot = r(30) - 15;
+    for (i = 0; i < 26; i++) dots += '<circle cx="' + r(200) + '" cy="' + r(172) + '" r="' + (1 + r(3)) + '" fill="' + color + '" opacity="' + (0.1 + r(30) / 100) + '"/>';
+    var pts = [], x;
+    for (x = 0; x <= 6; x++) pts.push([x * 33, 130 - x * 9 - r(26)]);
+    var line = pts.map(function (p, k) { return (k ? 'L' : 'M') + p[0] + ',' + p[1]; }).join(' ');
+    return '<svg viewBox="0 0 200 172" width="' + (size || '100%') + '" height="' + (size || '100%') + '" role="img" aria-label="' + esc(sym) + ' token art" style="display:block">' +
+      '<defs><radialGradient id="g' + sym + '" cx="30%" cy="20%"><stop offset="0" stop-color="' + color + '" stop-opacity=".55"/><stop offset="1" stop-color="' + color + '" stop-opacity="0"/></radialGradient></defs>' +
+      '<rect width="200" height="172" fill="#0c0d11"/><rect width="200" height="172" fill="url(#g' + sym + ')"/>' +
+      dots +
+      '<path d="' + line + '" fill="none" stroke="' + color + '" stroke-width="3" stroke-linecap="round" opacity=".55"/>' +
+      '<g transform="rotate(' + rot + ' 100 96)">' +
+      '<text x="100" y="106" text-anchor="middle" font-family="Bricolage Grotesque, sans-serif" font-weight="800" ' +
+      'font-size="' + Math.max(20, Math.min(46, Math.round(270 / Math.max(3, sym.length)))) + '" fill="' + color + '" ' +
+      'textLength="' + Math.min(164, sym.length * 21) + '" lengthAdjust="spacingAndGlyphs">' + esc(sym) + '</text></g>' +
+      '<path d="M14 156 16 142l7 7 2-10 2 10 7-7 2 14z" fill="none" stroke="' + color + '" stroke-width="2.6" stroke-linejoin="round" opacity=".9"/>' +
+      '</svg>';
+  }
+
+  /* ---------------- board ---------------- */
+  function stateFilters() {
+    var keys = ['ALL'].concat(Object.keys(STATES));
+    $('#states').innerHTML = keys.map(function (k) {
+      var c = k === 'ALL' ? '' : ';color:' + STATES[k].c + ';border-color:' + STATES[k].c;
+      var n = k === 'ALL' ? NARRATIVES.length : NARRATIVES.filter(function (x) { return x.state === k; }).length;
+      return '<button class="pill" type="button" data-state="' + k + '" aria-pressed="' + (state.filter === k) + '" style="' + (state.filter === k ? '' : c) + '">' +
+        (k === 'ALL' ? 'All' : STATES[k].label) + ' <span style="opacity:.6">' + n + '</span></button>';
+    }).join('');
+  }
+
+  function visible() {
+    var q = state.q.trim().toLowerCase();
+    var list = NARRATIVES.filter(function (n) {
+      if (state.filter !== 'ALL' && n.state !== state.filter) return false;
+      if (!q) return true;
+      return (n.stock + ' ' + n.title + ' ' + n.why).toLowerCase().indexOf(q) >= 0;
+    });
+    var by = {
+      momentum: function (a, b) { return b.momentum - a.momentum; },
+      posts: function (a, b) { return b.posts24 - a.posts24; },
+      velocity: function (a, b) { return b.v1 - a.v1; },
+      baseline: function (a, b) { return b.baseline - a.baseline; },
+      ignition: function (a, b) { return a.ignitionMin - b.ignitionMin; }
+    };
+    return list.sort(by[state.sort]);
+  }
+
+  function card(n, i) {
+    var s = st(n.state), held = mine.filter(function (m) { return m.narrativeId === n.id; })[0];
+    var taken = waitlist.filter(function (w) { return w.narrative === n.title; }).length;
+    return '<article class="card" style="animation-delay:' + Math.min(i * 45, 360) + 'ms">' +
+      '<div class="top"><span class="tick">' + n.stock + '</span>' +
+        '<span class="state" style="color:' + s.c + '">' + s.label + '</span>' +
+        '<span class="age">ignited ' + n.ignition + ' ago</span></div>' +
+      '<h3>' + esc(n.title) + '</h3>' +
+      '<p class="why">' + esc(n.why) + '</p>' +
+      '<div class="mom">' +
+        '<div><div class="lab">Momentum</div><div class="big" style="color:' + s.c + '">' + n.momentum + '</div></div>' +
+        '<div><div class="lab">Baseline</div><div class="big" style="font-size:22px">' + n.baseline.toFixed(1) + 'x</div></div>' +
+        '<div><div class="lab">Velocity 1h</div><div class="big" style="font-size:22px">' + n.v1.toFixed(1) + 'x</div></div>' +
+        '<svg width="92" height="30" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true">' +
+          '<path d="' + sparkPath(n.spark) + '" fill="none" stroke="' + s.c + '" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linecap="round"/></svg>' +
+      '</div>' +
+      '<div class="bars"><i style="width:' + n.momentum + '%;background:' + s.c + '"></i></div>' +
+      '<div class="kv">' +
+        '<div><b>' + kfmt(n.posts24) + '</b><span>X posts 24h</span></div>' +
+        '<div><b>' + kfmt(n.likes) + '</b><span>Likes</span></div>' +
+        '<div><b>' + kfmt(n.reposts) + '</b><span>Reposts</span></div>' +
+      '</div>' +
+      '<div class="foot">' +
+        '<div class="src">' + n.rate + ' posts/hr · ' + n.news + ' news · ' + n.xsample + ' sampled<br>' +
+          (taken ? taken + ' reservation' + (taken > 1 ? 's' : '') + ' held' : 'no reservation yet') + '</div>' +
+        (held
+          ? '<span class="taken"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5 6.5 12 13 4.5"/></svg>Yours</span>'
+          : '<button class="cta" type="button" data-reserve="' + n.id + '">Reserve a launch' +
+            '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8h11M9 3.5 13.5 8 9 12.5"/></svg></button>') +
+      '</div></article>';
+  }
+
+  function resCard(w) {
+    var color = w.mine ? '#d4f84a' : st((NARRATIVES.filter(function (n) { return n.title === w.narrative; })[0] || {}).state).c;
+    return '<article class="res' + (w.mine ? ' mine' : '') + '" style="position:relative">' +
+      '<div class="art">' + art(w.seed, color, w.sym) + '</div>' +
+      '<div class="body">' +
+        '<div style="display:flex;align-items:center;gap:8px">' +
+          '<span class="state" style="color:' + color + '">' + (w.mine ? 'Yours' : 'Reserved') + '</span>' +
+          '<span style="margin-left:auto;font-family:var(--mono);font-size:11px;color:#6d7280">#' + String(w.q).padStart(3, '0') + '</span>' +
+        '</div>' +
+        '<div class="nm" style="margin-top:10px">' + esc(w.name) + '</div>' +
+        '<div class="sy" style="color:' + color + '">$' + esc(w.sym) + '</div>' +
+        '<div class="meta">' +
+          '<span><i>Pair</i>' + w.stock + ' · ' + (w.chain === 'base' ? 'Base' : 'Robinhood') + '</span>' +
+          '<span><i>Start MC</i>' + money(w.mcap) + '</span>' +
+          '<span><i>Fee</i>' + w.fee + '%</span>' +
+          '<span><i>Scout</i>' + esc(w.scout) + '</span>' +
+        '</div>' +
+      '</div></article>';
+  }
+
+  function render() {
+    $('#grid').innerHTML = visible().map(card).join('') ||
+      '<div class="empty" style="grid-column:1/-1"><h3>Nothing matches</h3><p>Try another stock, or clear the filters.</p></div>';
+    $('#waitGrid').innerHTML = waitlist.map(resCard).join('');
+    $('#mineGrid').innerHTML = mine.map(resCard).join('');
+    $('#mineGrid').hidden = !mine.length;
+    $('#mineEmpty').hidden = !!mine.length;
+    $('#cBoard').textContent = visible().length;
+    $('#cWait').textContent = waitlist.length;
+    $('#cMine').textContent = mine.length;
+    $('#sNarr').textContent = NARRATIVES.length;
+    $('#sRate').textContent = state.rate.toLocaleString('en-US');
+    $('#sRes').textContent = waitlist.length;
+    $('#sLeft').textContent = SLOTS - waitlist.length;
+    stateFilters();
+  }
+
+  function tab(name) {
+    state.tab = name;
+    [].forEach.call(document.querySelectorAll('.tab'), function (t) {
+      t.setAttribute('aria-selected', String(t.dataset.tab === name));
+    });
+    $('#paneBoard').hidden = name !== 'board';
+    $('#paneWait').hidden = name !== 'wait';
+    $('#paneMine').hidden = name !== 'mine';
+    $('#searchWrap').hidden = name !== 'board';
+    $('#sort').hidden = name !== 'board';
+    $('#states').hidden = name !== 'board';
+  }
+
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-tab]');
+    if (t) { tab(t.dataset.tab); return; }
+    var link = e.target.closest('[data-tab-link]');
+    if (link) { e.preventDefault(); tab(link.dataset.tabLink); $('#board').scrollIntoView(); return; }
+    var back = e.target.closest('[data-goboard]');
+    if (back) { tab('board'); return; }
+    var f = e.target.closest('[data-state]');
+    if (f) { state.filter = f.dataset.state; render(); return; }
+    var r = e.target.closest('[data-reserve]');
+    if (r) { openAgent(r.dataset.reserve); }
+  });
+  $('#q').addEventListener('input', function (e) { state.q = e.target.value; render(); });
+  $('#sort').addEventListener('change', function (e) { state.sort = e.target.value; render(); });
+
+  /* live-ish scan counter, same cadence as the landing wire */
+  setInterval(function () {
+    state.rate += Math.round(Math.random() * 11);
+    $('#sRate').textContent = state.rate.toLocaleString('en-US');
+  }, 2600);
+
+  /* launch countdown, 5 Oct 2026 23:00 SGT */
+  (function countdown() {
+    var target = Date.UTC(2026, 9, 5, 15, 0, 0), el = $('#cdNav');
+    var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+    var tick = function () {
+      var left = target - Date.now();
+      if (left <= 0) { el.textContent = 'live now'; return; }
+      var s = Math.floor(left / 1000);
+      el.textContent = Math.floor(s / 86400) + 'd ' + pad(Math.floor(s / 3600) % 24) + 'h ' + pad(Math.floor(s / 60) % 60) + 'm';
+    };
+    tick(); setInterval(tick, 1000);
+  })();
+
+  /* ---------------- scout agent ---------------- */
+  var flow = null, queue = Promise.resolve();
+  var log = $('#log'), chipbar = $('#chips');
+
+  function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function scroll() {
+    log.scrollTop = log.scrollHeight;
+    requestAnimationFrame(function () { log.scrollTop = log.scrollHeight; });
+    setTimeout(function () { log.scrollTop = log.scrollHeight; }, 90);
+  }
+  function push(cls, html) {
+    var d = document.createElement('div');
+    d.className = 'msg ' + cls;
+    d.innerHTML = '<div class="b">' + html + '</div>';
+    log.appendChild(d); scroll(); return d;
+  }
+  function raw(html) {
+    var d = document.createElement('div');
+    d.className = 'msg bot'; d.style.maxWidth = '100%';
+    d.innerHTML = html;
+    log.appendChild(d); scroll(); return d;
+  }
+  function bot(html, think) {
+    queue = queue.then(function () {
+      var t = document.createElement('div');
+      t.className = 'msg bot';
+      t.innerHTML = '<div class="b typing" style="padding:14px 16px"><i></i><i></i><i></i></div>';
+      log.appendChild(t); scroll();
+      return wait(think || 620).then(function () { t.remove(); push('bot', html); });
+    });
+  }
+  function botNode(fn, think) {
+    queue = queue.then(function () { return wait(think || 420).then(function () { raw(fn()); }); });
+  }
+  function chips(list) {
+    queue = queue.then(function () {
+      chipbar.innerHTML = list.map(function (c) {
+        return '<button class="pill" type="button" data-chip="' + c[0] + '">' + c[1] + '</button>';
+      }).join('');
+    });
+  }
+  function drawer(on) {
+    $('#drawer').classList.toggle('on', on);
+    $('#scrim').classList.toggle('on', on);
+    document.body.style.overflow = on ? 'hidden' : '';
+    if (on) setTimeout(function () { $('#say').focus(); }, 420);
+  }
+  $('#closeDrawer').addEventListener('click', function () { drawer(false); });
+  $('#scrim').addEventListener('click', function () { drawer(false); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') drawer(false); });
+
+  function hash(s) { var h = 0, i; for (i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 9973; return h; }
+  function pairName(n, chain) { return n.stock + ' · ' + (chain === 'base' ? 'Coinbase tokenized' : 'Robinhood tokenized'); }
+  function accent() { return st(flow.n.state).c; }
+
+  function draftCard(mode) {
+    var n = flow.n, c = accent(), approve = mode === 'approve';
+    return '<div class="tokencard' + (approve ? ' approve' : '') + '">' +
+      '<div class="hd" style="' + (approve ? 'color:#d4f84a' : '') + '">' +
+        (approve ? 'Launch approval · one signature' : 'Reservation draft · editable') + '</div>' +
+      '<div class="row"><div class="art" style="border-color:' + c + ';overflow:hidden">' + art(flow.seed, c, flow.sym, '100%') + '</div>' +
+        '<div style="min-width:0"><div class="nm">' + esc(flow.name) + '</div>' +
+          '<div class="sy" style="color:' + c + '">$' + esc(flow.sym) + '</div>' +
+          '<div class="ds">' + esc(flow.desc) + '</div></div></div>' +
+      '<div class="terms">' +
+        '<div><span>Narrative</span><b style="color:' + c + '">' + n.stock + ' · ' + st(n.state).label + '</b></div>' +
+        '<div><span>Quote asset</span><b>' + pairName(n, flow.chain) + '</b></div>' +
+        '<div><span>Chain</span><b>' + (flow.chain === 'base' ? 'Base · 8453' : 'Robinhood · 4663') + '</b></div>' +
+        '<div><span>Start market cap</span><b>' + money(flow.mcap) + '</b></div>' +
+        '<div><span>Fee tier</span><b>' + flow.fee + '% · ' + (flow.fee === 1 ? 'low' : flow.fee === 2 ? 'standard' : 'degen') + '</b></div>' +
+        '<div><span>Liquidity</span><b>Locked forever</b></div>' +
+      '</div>' +
+      '<div class="split" style="margin-top:12px"><i style="width:30%;background:#f6ebd6"></i><i style="width:50%;background:#d4f84a"></i><i style="width:20%;background:#b56cf5"></i></div>' +
+      '<div class="splitk"><span>30% you</span><span style="color:#d4f84a">50% holders</span><span style="color:#b56cf5">20% protocol</span></div>' +
+      (approve
+        ? '<div class="note"><b>!</b><div>Signing records the reservation only. No token mints today, nothing leaves your wallet, and the hold expires 24 hours after the launchpad opens.</div></div>' +
+          '<div class="acts" id="acts">' +
+            (state.wallet
+              ? '<button class="cta" type="button" data-act="sign">Confirm reservation</button>'
+              : '<button class="cta" type="button" data-act="connect">Connect wallet</button>') +
+            '<button class="cta ghost" type="button" data-act="edit">Edit</button></div>'
+        : '') +
+      '</div>';
+  }
+
+  var DRAFT_CHIPS = [['ship', 'Ship it'], ['image', 'New image'], ['name', 'Different name'],
+                     ['cap', 'Change market cap'], ['chain', 'Switch chain'], ['fee', 'Fee tier']];
+
+  function draftFor(n) {
+    intake = null;
+    flow = { n: n, idx: 0, name: n.names[0][0], sym: n.names[0][1], desc: n.names[0][2],
+             seed: hash(n.id) + 7, mcap: 25000, fee: 2, chain: 'base', step: 'draft' };
+    if (n.custom) {
+      bot('Running with <b>' + esc(n.title) + '</b> as your own thesis. It is not on the board, so it carries no momentum score yet, and the agents start tracking it the moment it launches.', 420);
+      bot('Paired to the canonical <b>' + n.stock + '</b> stock token' + (n.guessed ? ', which is my best guess' : '') +
+          '. Say <b>pair with TSLA</b>, or any ticker, to move it. Here is the draft.');
+    } else {
+      bot('Locked on <b>' + esc(n.title) + '</b>. ' + st(n.state).label + ' at momentum <b>' + n.momentum +
+          '</b>, running <b>' + n.baseline.toFixed(1) + 'x</b> its own baseline with ' + kfmt(n.posts24) + ' posts in 24h.', 420);
+      bot('I paired it to the canonical <b>' + n.stock + '</b> stock token, named the coin, drew the art and set the usual terms. Read it and tell me what to change.');
+    }
+    botNode(function () { return draftCard('draft'); });
+    bot('Happy with it?', 500);
+    chips(DRAFT_CHIPS);
+  }
+
+  function openAgent(id) {
+    var n = NARRATIVES.filter(function (x) { return x.id === id; })[0];
+    if (!n) return;
+    queue = Promise.resolve();
+    log.innerHTML = ''; chipbar.innerHTML = '';
+    drawer(true);
+    draftFor(n);
+  }
+
+  /* ---------------- launching without a board narrative ---------------- */
+  var intake = null, customCount = 0;
+  var STOP = { the: 1, and: 1, for: 1, with: 1, that: 1, this: 1, from: 1, into: 1, about: 1, narrative: 1,
+               narratives: 1, story: 1, stories: 1, search: 1, find: 1, coin: 1, token: 1, launch: 1, want: 1,
+               some: 1, any: 1, look: 1, make: 1, please: 1, around: 1, something: 1 };
+  var STOCKMAP = [[/drone|uav|reshor/, 'RCAT'], [/robot|gpu|chip|inference|model|\bai\b|agent/, 'NVDA'],
+    [/apple|iphone|fold|hinge/, 'AAPL'], [/tesla|roadster|robotaxi|\bev\b|charger/, 'TSLA'],
+    [/bitcoin|treasury|\bbtc\b|balance sheet/, 'MSTR'], [/coinbase|tokeni|exchange|onchain|wallet/, 'COIN'],
+    [/predict|betting|event contract|odds/, 'HOOD'], [/defen|missile|army|nato|munition/, 'LMT'],
+    [/server|rack|cooling|data ?cent/, 'SMCI'], [/agency|procure|contract|government|federal/, 'PLTR']];
+  var SUFFIX = ['pilled', 'maxxing', 'core', 'gang', 'szn', 'father'];
+  var LINES = ['Somebody had to make the {x} coin. Turned out to be you.',
+               'The {x} trade, minus the brokerage account.',
+               'Early on {x}, loud about it, paid in stock.'];
+
+  function keywords(t) {
+    return t.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').split(/\s+/)
+      .filter(function (w) { return w.length > 2 && !STOP[w]; });
+  }
+  function inferStock(t) {
+    for (var i = 0; i < STOCKMAP.length; i++) if (STOCKMAP[i][0].test(t.toLowerCase())) return STOCKMAP[i][1];
+    return null;
+  }
+  function coin(text, variant) {
+    /* the subject of a thesis is usually its first real word, not its longest */
+    var ws = keywords(text);
+    var base = (ws.filter(function (w) { return w.length > 3; })[0] || ws[0] || 'stonk').replace(/[^a-z0-9]/g, '');
+    var nm = base.charAt(0).toUpperCase() + base.slice(1) + SUFFIX[(variant + base.length) % SUFFIX.length];
+    return [nm.slice(0, 18), base.toUpperCase().slice(0, 8), LINES[variant % LINES.length].replace('{x}', base)];
+  }
+  function customNarrative(text) {
+    var title = text.trim().replace(/\s+/g, ' ').slice(0, 90);
+    var stock = inferStock(text);
+    customCount++;
+    return { id: 'nar_custom_' + customCount, custom: true, stock: stock || 'NVDA', state: 'CUSTOM',
+             title: title, why: title, momentum: null, guessed: !stock,
+             names: [coin(text, 0), coin(text, 1), coin(text, 2)] };
+  }
+  function searchWire(text) {
+    var terms = keywords(text);
+    return NARRATIVES.filter(function (n) {
+      var hay = (n.stock + ' ' + n.title + ' ' + n.why).toLowerCase();
+      return terms.some(function (t) { return hay.indexOf(t) >= 0; });
+    }).sort(function (a, b) { return b.momentum - a.momentum; }).slice(0, 3);
+  }
+  function resultRows(list) {
+    return '<div class="tokencard"><div class="hd">' + list.length + ' on the wire</div>' +
+      list.map(function (n) {
+        var c = st(n.state).c;
+        return '<button class="wrow" type="button" data-pick="' + n.id + '" style="height:auto;padding:12px 14px;align-items:flex-start">' +
+          '<i style="background:' + c + ';margin-top:4px"></i>' +
+          '<span style="min-width:0;display:block"><span style="display:block;font-size:14.5px;line-height:1.35;font-weight:600">' + esc(n.title) + '</span>' +
+          '<span style="display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:' + c + ';margin-top:5px;font-weight:700">' +
+          n.stock + ' · ' + st(n.state).label + ' · momentum ' + n.momentum + '</span></span></button>';
+      }).join('') + '</div>';
+  }
+  function doSearch(text) {
+    var hits = searchWire(text);
+    intake = null;
+    if (!hits.length) {
+      bot('Nothing on the wire matches that yet. I can still launch it as your own thesis, unscored until the agents pick it up.');
+      return draftFor(customNarrative(text));
+    }
+    bot('Found ' + hits.length + ' the agents are already tracking. Pick one, or describe your own and I will build it from scratch.');
+    botNode(function () { return resultRows(hits); });
+    chips([['own', 'Use my own thesis'], ['board', 'Open the full board']]);
+  }
+  function openCustom() {
+    queue = Promise.resolve();
+    log.innerHTML = ''; chipbar.innerHTML = ''; flow = null; intake = 'open';
+    drawer(true);
+    bot('Launching your own, then. Tell me the story you want to trade.', 360);
+    bot('Ask me to <b>search the wire</b> for anything, or just describe your thesis and I will name it, draw it and pair it to the right stock.');
+    chips([['search', 'Search the wire'], ['own', 'Describe my own'], ['board', 'Pick from the board']]);
+  }
+  $('#launchBtn').addEventListener('click', openCustom);
+
+  function redraw(line) {
+    bot(line);
+    botNode(function () { return draftCard(flow.step === 'approve' ? 'approve' : 'draft'); });
+  }
+
+  var ACT = {
+    image: function () {
+      flow.seed = Math.floor(Math.random() * 9000) + 100;
+      redraw('New art, same palette as the narrative state.');
+    },
+    name: function () {
+      flow.idx = (flow.idx + 1) % flow.n.names.length;
+      var p = flow.n.names[flow.idx];
+      flow.name = p[0]; flow.sym = p[1]; flow.desc = p[2];
+      redraw('Try <b>' + esc(flow.name) + '</b>, ticker <b>$' + esc(flow.sym) + '</b>.');
+    },
+    cap: function () {
+      flow.mcap = flow.mcap === 25000 ? 40000 : flow.mcap === 40000 ? 60000 : 25000;
+      redraw('Start market cap moved to <b>' + money(flow.mcap) + '</b>. Lower starts fill faster, higher starts leave less upside for the room.');
+    },
+    chain: function () {
+      flow.chain = flow.chain === 'base' ? 'rh' : 'base';
+      redraw('Switched to <b>' + (flow.chain === 'base' ? 'Base' : 'Robinhood Chain') + '</b>, quoted in ' + pairName(flow.n, flow.chain) + '.');
+    },
+    fee: function () {
+      flow.fee = flow.fee === 2 ? 3 : flow.fee === 3 ? 1 : 2;
+      redraw('Fee tier now <b>' + flow.fee + '%</b>. The 30 / 50 / 20 split is fixed whatever the tier.');
+    },
+    ship: function () {
+      flow.step = 'approve';
+      bot('Locking the draft. This is the card you are signing.');
+      botNode(function () { return draftCard('approve'); });
+      chips([['image', 'New image'], ['name', 'Different name'], ['cap', 'Change market cap']]);
+    },
+    search: function () {
+      intake = 'search';
+      bot('What should I look for? A theme, a ticker, a phrase. Try <b>drones</b>, <b>foldables</b> or <b>treasury</b>.');
+      chips([['own', 'Describe my own instead']]);
+    },
+    own: function () {
+      intake = 'thesis';
+      flow = null;
+      bot('Go ahead. One line is enough, something like <b>quantum error correction finally works</b>. I will name it, draw it and pair it.');
+      chips([['search', 'Search the wire instead']]);
+    },
+    board: function () { drawer(false); tab('board'); },
+    edit: function () {
+      flow.step = 'draft';
+      bot('Back to the draft. What should change?');
+      chips([['ship', 'Ship it'], ['image', 'New image'], ['name', 'Different name'], ['cap', 'Change market cap'], ['chain', 'Switch chain'], ['fee', 'Fee tier']]);
+    },
+    connect: function () {
+      bot('Pick a wallet. It signs a message, not a transfer, so there is no gas today.');
+      botNode(function () {
+        return '<div class="tokencard"><div class="hd">Connect wallet</div><div class="wallets">' +
+          [['MetaMask', '#f0665a'], ['Coinbase Wallet', '#7fb3ff'], ['Rainbow', '#b56cf5']].map(function (w) {
+            return '<button class="wrow" type="button" data-wallet="' + w[0] + '"><i style="background:' + w[1] + '"></i>' + w[0] + '<em>detected</em></button>';
+          }).join('') + '</div></div>';
+      });
+      chips([]);
+    },
+    sign: function () {
+      bot('Sent it to your wallet. Waiting for the signature.', 300);
+      botNode(function () {
+        return '<div class="tokencard"><div class="row" style="align-items:center;gap:12px">' +
+          '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d4f84a" stroke-width="2.6" style="animation:spin 1s linear infinite;flex:none">' +
+          '<circle cx="12" cy="12" r="9" opacity=".25"/><path d="M21 12a9 9 0 0 0-9-9" stroke-linecap="round"/></svg>' +
+          '<div style="font-family:var(--mono);font-size:12.5px;color:#c9c4b8">Signing reservation for $' + esc(flow.sym) + '</div></div></div>';
+      });
+      queue = queue.then(function () { return wait(1500).then(confirmDone); });
+    }
+  };
+
+  function confirmDone() {
+    var q = waitlist.length + 1;
+    var entry = { name: flow.name, sym: flow.sym, stock: flow.n.stock, chain: flow.chain,
+      narrative: flow.n.title, narrativeId: flow.n.id, mcap: flow.mcap, fee: flow.fee,
+      scout: state.wallet, q: q, seed: flow.seed, mine: true };
+    waitlist.unshift(entry); mine.unshift(entry);
+    render();
+    raw('<div class="tokencard approve"><div class="done">' +
+      '<div class="mark"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6.5"/></svg></div>' +
+      '<h4>Slot held</h4>' +
+      '<div class="sub">$' + esc(flow.sym) + ' is reserved against ' + esc(flow.n.stock) + ' · ' + esc(flow.n.title) +
+        '. You are the scout on record: 30% of every trade fee, plus stock rewards on the pair.</div>' +
+      '<div class="rid">Reservation #' + String(q).padStart(3, '0') + ' · queue position ' + q + ' of ' + SLOTS + '</div>' +
+      '</div>' +
+      '<div class="note"><b>!</b><div>Your hold expires <b>24 hours after the launchpad opens</b> on 5 Oct 2026, 23:00 SGT. We post the countdown in Telegram, so join it now while you remember.</div></div>' +
+      '<div class="links">' +
+        '<a class="cta" href="#board" data-act="tg">Join the Telegram<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8h11M9 3.5 13.5 8 9 12.5"/></svg></a>' +
+        '<a class="cta ghost" href="#board" data-act="x">Follow @mstonks on X</a>' +
+        '<button class="cta ghost" type="button" data-act="seewait">See the waitlist</button>' +
+      '</div></div>');
+    chipbar.innerHTML = '';
+    bot('Done. Anything else you want to scout while you are here?', 900);
+    chips([['seewait', 'See the waitlist'], ['back', 'Back to the board']]);
+  }
+
+  /* chips, wallet rows and in-card buttons all route here */
+  document.addEventListener('click', function (e) {
+    var w = e.target.closest('[data-wallet]');
+    if (w) {
+      state.wallet = '0x' + (hash(w.dataset.wallet + flow.sym) + 1000).toString(16).slice(0, 3) + '…' + (hash(flow.sym) + 300).toString(16).slice(0, 3);
+      $('#walletChip').textContent = state.wallet;
+      $('#walletChip').hidden = false;
+      bot('Connected <b>' + state.wallet + '</b> on ' + (flow.chain === 'base' ? 'Base' : 'Robinhood Chain') + '. One signature left.');
+      botNode(function () { return draftCard('approve'); });
+      return;
+    }
+    var pick = e.target.closest('[data-pick]');
+    if (pick) {
+      var chosen = NARRATIVES.filter(function (x) { return x.id === pick.dataset.pick; })[0];
+      if (chosen) { chipbar.innerHTML = ''; draftFor(chosen); }
+      return;
+    }
+    var a = e.target.closest('[data-act]'), c = e.target.closest('[data-chip]');
+    var key = a ? a.dataset.act : c ? c.dataset.chip : null;
+    if (!key) return;
+    if (a && a.tagName === 'A') e.preventDefault();
+    if (key === 'tg' || key === 'x') {
+      bot(key === 'tg' ? 'Telegram opens in a new tab in the live build. Reservation updates and the launch countdown get posted there first.'
+                       : 'That opens @mstonks on X in the live build. Launch day threads and scout callouts go out there.');
+      return;
+    }
+    if (key === 'seewait') { drawer(false); tab('wait'); $('#board').scrollIntoView(); return; }
+    if (key === 'back') { drawer(false); tab('board'); return; }
+    if (ACT[key]) ACT[key]();
+  });
+
+  /* free text, parsed loosely so typing does something sensible */
+  $('#ask').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var v = $('#say').value.trim();
+    if (!v) return;
+    $('#say').value = '';
+    push('me', esc(v));
+    var t = v.toLowerCase(), m;
+
+    if (!flow) {
+      if (intake === 'search' || /^(search|find|look|any|show|scan)\b/.test(t) || /the wire|narratives?\b/.test(t)) {
+        var qtext = v.replace(/^(search|find|look|show|scan)\s*(for|up)?\s*/i, '')
+                     .replace(/\b(narratives?|the wire|on the wire|about)\b/ig, ' ').trim();
+        return doSearch(qtext || v);
+      }
+      return draftFor(customNarrative(v));
+    }
+
+    if ((m = t.match(/pair (?:it )?(?:with|to) \$?([a-z]{2,5})\b/))) {
+      flow.n.stock = m[1].toUpperCase();
+      flow.n.guessed = false;
+      return redraw('Paired with <b>' + flow.n.stock + '</b>, quoted in ' + pairName(flow.n, flow.chain) + '.');
+    }
+    if (/^(ship|go|yes|yep|confirm|approve|do it|looks good|perfect|lgtm)/.test(t)) return ACT.ship();
+    if (/sign|reserve now|confirm reservation/.test(t)) return state.wallet ? ACT.sign() : ACT.connect();
+    if (/wallet|connect/.test(t)) return ACT.connect();
+    if (/image|art|logo|picture|pfp/.test(t)) return ACT.image();
+    if ((m = t.match(/(?:call it|name it|rename to|name is)\s+([a-z0-9 ]{2,22})/))) {
+      var nm = m[1].trim().replace(/\s+/g, ' ');
+      flow.name = nm.charAt(0).toUpperCase() + nm.slice(1);
+      flow.sym = nm.replace(/[^a-z0-9]/g, '').toUpperCase().slice(0, 7);
+      return redraw('Renamed to <b>' + esc(flow.name) + '</b>, ticker <b>$' + esc(flow.sym) + '</b>.');
+    }
+    if (/name|ticker|symbol|call/.test(t)) return ACT.name();
+    if ((m = t.match(/(\d+(?:\.\d+)?)\s*(k|m)?/)) && /cap|mcap|market|start/.test(t)) {
+      var v2 = parseFloat(m[1]) * (m[2] === 'k' ? 1000 : m[2] === 'm' ? 1000000 : m[1] < 500 ? 1000 : 1);
+      flow.mcap = Math.max(5000, Math.min(250000, Math.round(v2)));
+      return redraw('Start market cap set to <b>' + money(flow.mcap) + '</b>.');
+    }
+    if (/fee/.test(t)) {
+      var f = (t.match(/([123])\s*%/) || [])[1];
+      if (f) { flow.fee = +f; return redraw('Fee tier set to <b>' + flow.fee + '%</b>.'); }
+      return ACT.fee();
+    }
+    if (/robinhood|rh chain|switch chain|base/.test(t)) return ACT.chain();
+    if (/why|explain|momentum|score|stat/.test(t)) {
+      var n = flow.n;
+      return bot('It scores <b>' + n.momentum + '</b> on momentum: ' + n.rate + ' posts an hour against a ' +
+        n.baseline.toFixed(1) + 'x baseline, velocity ' + n.v1.toFixed(1) + 'x over the last hour, ' + n.news +
+        ' news sources and ' + n.xsample + ' sampled posts. It ignited ' + n.ignition + ' ago and is <b>' +
+        st(n.state).label.toLowerCase() + '</b>.');
+    }
+    bot('I can change the <b>name</b>, the <b>art</b>, the <b>market cap</b>, the <b>fee tier</b>, the <b>chain</b> or the <b>pairing</b> (say "pair with TSLA"), or explain why this narrative scored where it did. Say <b>ship it</b> when the card looks right.');
+  });
+
+  render();
+  tab('board');
+})();
+</script>
+</body>
+</html>

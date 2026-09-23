@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>mstonks docs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- fonts load without blocking the page: it paints in the fallback stack and swaps when they land -->
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Familjen+Grotesk:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Familjen+Grotesk:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"></noscript>
+<style>
+:root{
+  --bg:#0e1014; --panel:#12151b; --sunk:#0c0d11;
+  --ink:#f6ebd6; --dim:#c9c4b8; --mute:#a7acb6; --faint:#6d7280;
+  --lime:#d4f84a; --red:#f0665a; --purple:#b56cf5; --blue:#7fb3ff;
+  --line:rgba(246,235,214,.14); --hair:rgba(246,235,214,.07);
+  --disp:'Bricolage Grotesque',sans-serif;
+  --body:'Familjen Grotesk',ui-sans-serif,system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+  --nav:74px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+main{position:relative;overflow:clip}
+a{color:var(--lime);text-decoration:none}
+a:hover{color:var(--ink)}
+::selection{background:var(--lime);color:var(--bg)}
+h1,h2,h3,h4,p{margin:0}
+@keyframes tape{to{transform:translateX(-50%)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+.wrap{max-width:1400px;margin:0 auto;padding:0 clamp(18px,3vw,40px)}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint)}
+.cta{display:inline-flex;align-items:center;justify-content:center;gap:10px;height:42px;padding:0 18px;
+  background:var(--lime);color:var(--bg);border:0;border-radius:999px;font-weight:700;font-size:14px;
+  cursor:pointer;white-space:nowrap;transition:transform .2s cubic-bezier(.2,.8,.2,1)}
+.cta:hover{transform:translateY(-2px) rotate(-1.2deg);color:var(--bg)}
+
+/* nav, identical across landing, terminal and docs */
+header.nav{position:fixed;top:0;left:0;right:0;z-index:60;display:flex;align-items:center;gap:28px;
+  padding:16px clamp(18px,3vw,40px);background:linear-gradient(180deg,rgba(14,16,20,.95),rgba(14,16,20,.72) 70%,rgba(14,16,20,0));
+  backdrop-filter:blur(8px)}
+.lock{display:inline-flex;align-items:flex-start;gap:3px;color:var(--lime)}
+.lock span{font-family:var(--disp);font-weight:800;font-size:30px;letter-spacing:-.055em;line-height:1;font-variation-settings:'opsz' 96,'wdth' 90}
+.lock svg{margin-top:-6px}
+.navlinks{display:flex;gap:22px;margin-left:8px;font-size:14px;font-weight:500}
+.navlinks a{color:var(--mute)}
+.navlinks a:hover,.navlinks a[aria-current="page"]{color:var(--ink)}
+.soon{display:inline-flex;align-items:center;gap:7px;color:var(--faint);cursor:default;white-space:nowrap}
+.soon em{font-style:normal;font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;
+  border:1px solid rgba(246,235,214,.22);border-radius:999px;padding:2px 6px;color:var(--faint)}
+@media(max-width:820px){.soon{display:none}}
+@media(max-width:560px){
+  header.nav{gap:12px;padding:12px 14px}
+  .navlinks{gap:14px;margin-left:0;font-size:13px}
+  .lock span{font-size:24px}
+  .navright{gap:8px}
+  .navright .cta{height:38px;padding:0 14px;font-size:13px}
+}
+@media(max-width:400px){
+  header.nav{gap:10px;padding:12px 12px}
+  .navlinks{gap:12px;font-size:12.5px}
+  .lock span{font-size:21px}
+  .navright .cta{padding:0 12px;font-size:12.5px}
+}
+.navright{margin-left:auto;display:flex;align-items:center;gap:12px}
+.clock{display:none;align-items:center;gap:10px;border:1.5px solid rgba(212,248,74,.35);border-radius:999px;
+  padding:7px 14px;background:rgba(14,16,20,.55);font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--faint);white-space:nowrap}
+.clock b{color:var(--lime);font-weight:700;letter-spacing:.04em}
+@media(min-width:900px){.clock{display:inline-flex}}
+
+/* head */
+.head{padding:calc(var(--nav) + clamp(26px,4vh,44px)) 0 0}
+.head h1{font-family:var(--disp);font-weight:800;font-variation-settings:'opsz' 96,'wdth' 80;
+  font-size:clamp(38px,5.6vw,78px);line-height:.92;letter-spacing:-.05em;text-transform:uppercase;margin:16px 0 0;max-width:18ch}
+.head h1 i{font-style:italic;color:var(--lime);font-variation-settings:'opsz' 96,'wdth' 75}
+.head p{margin:18px 0 0;max-width:64ch;font-size:clamp(16px,1.4vw,19px);line-height:1.5;color:var(--dim);text-wrap:pretty}
+
+.tape{position:relative;z-index:2;margin:clamp(26px,3.6vw,42px) -6vw 0;transform:rotate(-1.6deg);
+  background:var(--lime);color:var(--bg);overflow:hidden;padding:12px 0 15px;
+  clip-path:polygon(0 8%,2% 0,4% 10%,6% 2%,8% 9%,10% 1%,12% 8%,14% 0,16% 10%,18% 3%,20% 9%,22% 0,24% 8%,26% 2%,28% 10%,30% 1%,32% 8%,34% 0,36% 9%,38% 3%,40% 10%,42% 1%,44% 8%,46% 0,48% 9%,50% 2%,52% 10%,54% 0,56% 8%,58% 3%,60% 9%,62% 1%,64% 10%,66% 0,68% 8%,70% 2%,72% 9%,74% 0,76% 10%,78% 3%,80% 8%,82% 1%,84% 9%,86% 0,88% 10%,90% 2%,92% 8%,94% 0,96% 9%,98% 3%,100% 8%,100% 92%,98% 100%,96% 90%,94% 98%,92% 91%,90% 100%,88% 92%,86% 99%,84% 90%,82% 97%,80% 91%,78% 100%,76% 92%,74% 98%,72% 90%,70% 99%,68% 92%,66% 100%,64% 91%,62% 98%,60% 90%,58% 97%,56% 92%,54% 100%,52% 91%,50% 98%,48% 90%,46% 99%,44% 92%,42% 100%,40% 91%,38% 98%,36% 90%,34% 97%,32% 92%,30% 100%,28% 91%,26% 98%,24% 90%,22% 99%,20% 92%,18% 100%,16% 91%,14% 98%,12% 90%,10% 97%,8% 92%,6% 100%,4% 91%,2% 98%,0 92%)}
+.tape .run{display:flex;width:max-content;animation:tape 44s linear infinite;font-family:var(--mono);
+  font-weight:700;font-size:14px;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.tape .run>span{display:flex;gap:42px;padding-right:42px}
+
+/* layout */
+.cols{display:grid;grid-template-columns:230px minmax(0,1fr);gap:clamp(28px,4vw,64px);
+  margin-top:clamp(38px,5vw,64px);padding-bottom:clamp(60px,8vw,110px)}
+@media(max-width:900px){.cols{grid-template-columns:1fr}}
+.toc{position:sticky;top:calc(var(--nav) + 24px);align-self:start;font-family:var(--mono);font-size:12px}
+@media(max-width:900px){.toc{position:static;border:1.5px solid var(--line);border-radius:16px;padding:16px;background:var(--panel)}}
+.toc div{letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin-bottom:14px}
+.toc a{display:block;color:var(--mute);padding:7px 0;border-left:2px solid transparent;padding-left:12px;
+  margin-left:-12px;transition:color .2s,border-color .2s}
+.toc a:hover{color:var(--ink)}
+.toc a.on{color:var(--lime);border-color:var(--lime)}
+
+section.doc{scroll-margin-top:calc(var(--nav) + 24px);padding-bottom:clamp(46px,6vw,78px)}
+section.doc h2{font-family:var(--disp);font-weight:800;font-variation-settings:'opsz' 96,'wdth' 82;
+  font-size:clamp(28px,3.6vw,50px);line-height:.98;letter-spacing:-.045em;text-transform:uppercase;margin:14px 0 0;text-wrap:balance}
+section.doc h3{font-size:19px;font-weight:600;letter-spacing:-.01em;margin:34px 0 0}
+section.doc p{margin:16px 0 0;max-width:74ch;font-size:16.5px;line-height:1.6;color:var(--dim);text-wrap:pretty}
+section.doc p b,section.doc li b{color:var(--ink)}
+section.doc ul{margin:16px 0 0;padding-left:20px;max-width:74ch}
+section.doc li{font-size:16.5px;line-height:1.6;color:var(--dim);margin-top:9px}
+section.doc li::marker{color:var(--lime)}
+code{font-family:var(--mono);font-size:.88em;color:var(--ink);background:rgba(246,235,214,.08);
+  border-radius:5px;padding:2px 6px}
+
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:2px;
+  background:var(--line);border:1.5px solid var(--line);border-radius:18px;overflow:hidden;margin-top:26px}
+.steps div{background:var(--panel);padding:20px}
+.steps b{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--lime)}
+.steps h4{font-family:var(--disp);font-weight:800;font-size:24px;letter-spacing:-.04em;text-transform:uppercase;margin:10px 0 0}
+.steps p{margin-top:8px;font-size:14.5px;line-height:1.5;color:var(--mute)}
+
+.tbl{width:100%;border-collapse:collapse;margin-top:24px;border:1.5px solid var(--line);border-radius:16px;overflow:hidden}
+.tblwrap{overflow-x:auto;margin-top:24px}
+.tblwrap .tbl{margin-top:0}
+.tbl th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--faint);font-weight:700;padding:13px 16px;background:var(--sunk);border-bottom:1px solid var(--line);white-space:nowrap}
+.tbl td{padding:14px 16px;font-size:15px;line-height:1.5;color:var(--dim);border-bottom:1px solid var(--hair);vertical-align:top}
+.tbl tr:last-child td{border-bottom:0}
+.tbl td b{color:var(--ink)}
+.tbl td.m,.tbl th.m{font-family:var(--mono);font-size:13px;white-space:nowrap}
+.state{display:inline-flex;align-items:center;gap:6px;border:1.5px solid currentColor;border-radius:999px;
+  padding:3px 9px;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.tag{display:inline-flex;align-items:center;border-radius:999px;padding:3px 10px;font-family:var(--mono);
+  font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+.tag.live{background:var(--lime);color:var(--bg)}
+.tag.soon{border:1.5px solid var(--purple);color:var(--purple)}
+.tag.later{border:1.5px solid var(--line);color:var(--faint)}
+
+.callout{display:flex;gap:14px;margin-top:26px;padding:18px 20px;border:1.5px solid rgba(240,102,90,.4);
+  border-radius:16px;background:rgba(240,102,90,.07);max-width:74ch}
+.callout b{color:var(--red)}
+.callout p{margin:0;font-size:15px;color:var(--dim)}
+.callout.lime{border-color:rgba(212,248,74,.4);background:rgba(212,248,74,.06)}
+.callout.lime b{color:var(--lime)}
+
+.split{display:flex;height:14px;gap:2px;border-radius:999px;overflow:hidden;margin-top:24px;max-width:620px}
+.splitk{display:flex;justify-content:space-between;max-width:620px;margin-top:9px;font-family:var(--mono);
+  font-size:11px;color:var(--mute)}
+
+details{border:1.5px solid var(--line);border-radius:14px;background:var(--panel);margin-top:10px;max-width:74ch}
+details[open]{border-color:rgba(212,248,74,.35)}
+summary{cursor:pointer;padding:16px 18px;font-weight:600;font-size:16px;list-style:none;display:flex;gap:12px;align-items:center}
+summary::-webkit-details-marker{display:none}
+summary::after{content:'+';margin-left:auto;font-family:var(--mono);color:var(--lime);font-size:18px}
+details[open] summary::after{content:'\2212'}
+details p{padding:0 18px 18px;margin:0;font-size:15.5px;line-height:1.6;color:var(--mute);max-width:none}
+
+footer{border-top:1px solid rgba(246,235,214,.12);padding:34px 0 40px;font-size:12.5px;line-height:1.65;color:var(--faint)}
+footer .in{display:flex;flex-wrap:wrap;gap:26px;justify-content:space-between}
+footer p{max-width:92ch;text-wrap:pretty}
+footer b{color:var(--mute)}
+footer .lk{display:flex;gap:18px;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+footer .lk a{color:var(--mute)}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <a class="lock" href="../landing/v3.html" aria-label="mstonks home">
+    <span>mstonks</span>
+    <svg width="18" height="16" viewBox="0 0 28 24" fill="none" stroke="#d4f84a" stroke-width="3" stroke-linejoin="round"><path d="M3 20 5 6l7 7 2-10 2 10 7-7 2 14z"/></svg>
+  </a>
+  <nav class="navlinks">
+    <a href="../terminal/v1.html">Board</a>
+    <a href="v1.html" aria-current="page">Docs</a>
+    <span class="soon">Predict <em>Soon</em></span>
+    <span class="soon">Rewards <em>Soon</em></span>
+  </nav>
+  <div class="navright">
+    <div class="clock">Launch in <b id="cdNav">--</b></div>
+    <a class="cta" href="../terminal/v1.html">Launch App
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8h11M9 3.5 13.5 8 9 12.5"/></svg>
+    </a>
+  </div>
+</header>
+
+<main>
+  <section class="wrap head">
+    <div class="eyebrow" style="color:#d4f84a;display:flex;align-items:center;gap:9px">
+      <span style="width:7px;height:7px;border-radius:50%;background:#d4f84a;animation:blink 1.4s infinite"></span>
+      Docs · MVP, web terminal
+    </div>
+    <h1>How a headline becomes a <i>memestock.</i></h1>
+    <p>Agents read the wire, score which stock narratives are actually accelerating, and any wallet can turn one
+      into a token paired to the real tokenized stock. Half the trading fees come back to holders in that stock.
+      This page is the whole mechanism, in order.</p>
+  </section>
+
+  <div class="tape" aria-hidden="true">
+    <div class="run">
+      <span><span>Narrative first, ticker second</span><span>Every launch references a narrative</span><span>LP locked forever</span><span>30 / 50 / 20, fixed at launch</span><span>Rewards paid in the real stock token</span><span>No custody, no permission</span></span>
+      <span><span>Narrative first, ticker second</span><span>Every launch references a narrative</span><span>LP locked forever</span><span>30 / 50 / 20, fixed at launch</span><span>Rewards paid in the real stock token</span><span>No custody, no permission</span></span>
+    </div>
+  </div>
+
+  <div class="wrap cols">
+    <aside class="toc">
+      <div>On this page</div>
+      <a href="#overview">Overview</a>
+      <a href="#engine">Narrative engine</a>
+      <a href="#metrics">Metrics</a>
+      <a href="#launch">Launching</a>
+      <a href="#reserve">Reservations</a>
+      <a href="#rewards">Stock rewards</a>
+      <a href="#predict">Prediction markets</a>
+      <a href="#agent">X agent</a>
+      <a href="#status">What ships when</a>
+      <a href="#risk">Risk and limits</a>
+      <a href="#faq">FAQ</a>
+    </aside>
+
+    <div>
+      <section class="doc" id="overview">
+        <div class="eyebrow">01 · Overview</div>
+        <h2>A market for stock narratives, not just tickers</h2>
+        <p>mstonks scans the supported tokenized-stock universe for news, extracts stock-linked narratives, and
+          measures with live post counts whether attention on each one is emerging, accelerating, peaking or fading.
+          Any trader can then launch a memestock attached to that narrative, quoted in the real tokenized stock, on
+          <b>Base</b> or <b>Robinhood Chain</b>, from a wallet-connected web terminal.</p>
+        <p>Each launch uses permanently locked Uniswap v4 liquidity and routes LP fees on a fixed split to the
+          launcher, a stock reward pool for holders, and the protocol. The token stays linked to its parent narrative
+          everywhere it appears, so after you buy you can still see whether the story is still running.</p>
+        <div class="steps">
+          <div><b>01 · Scout</b><h4>Agents</h4><p>News and X counts, scored into a narrative with a lifecycle state, before any token exists.</p></div>
+          <div><b>02 · Launch</b><h4>Anyone</h4><p>Pick a narrative, name the coin, pair it to the stock token. Liquidity locks permanently.</p></div>
+          <div><b>03 · Trade</b><h4>The room</h4><p>Buy and sell against the stock quote asset with the parent narrative in view the whole time.</p></div>
+          <div><b>04 · Earn</b><h4>Holders</h4><p>Half of every fee accrues to a pool that pays out in the real stock token, daily.</p></div>
+        </div>
+      </section>
+
+      <section class="doc" id="engine">
+        <div class="eyebrow">02 · Narrative engine</div>
+        <h2>How a narrative gets found and scored</h2>
+        <p>The engine is decision support and a distribution layer, not an autonomous issuer. It surfaces evidence
+          that a stock-linked story is moving. A human decides whether to launch or trade anything.</p>
+        <ul>
+          <li><b>Discovery.</b> Continuous news scan across the supported stock universe. An agent extracts the
+            stock-linked narrative: which company it touches, what the claim is, and a plain why-now summary.</li>
+          <li><b>Measurement.</b> Post counts on X set the current rate for the narrative and compare it to that
+            narrative's own baseline, so a story that normally runs quiet still registers when it jumps.</li>
+          <li><b>Scoring.</b> Rate, velocity, acceleration, novelty against baseline and narrative share roll into a
+            momentum score and a lifecycle state, refreshed on a schedule.</li>
+          <li><b>Evidence.</b> Only when a narrative crosses a threshold or changes state does the engine pull a small
+            sample of fresh, high-engagement posts, so the score stays counts-derived and the evidence stays cheap.</li>
+          <li><b>Separately, launchability.</b> How memeable a narrative is scores on its own. It is a launch aid,
+            never the ranking signal for attention.</li>
+        </ul>
+
+        <h3>Lifecycle states</h3>
+        <div class="tblwrap"><table class="tbl">
+          <thead><tr><th>State</th><th>What it means</th><th class="m">Typical read</th></tr></thead>
+          <tbody>
+            <tr><td><span class="state" style="color:#7fb3ff">Emerging</span></td><td>Attention has lifted off baseline and the story is young. Few sources, no token yet.</td><td class="m">earliest, thinnest evidence</td></tr>
+            <tr><td><span class="state" style="color:#d4f84a">Accelerating</span></td><td>Rate is climbing faster than it did an hour ago and sources are multiplying.</td><td class="m">the window most launches use</td></tr>
+            <tr><td><span class="state" style="color:#f0665a">Breakout</span></td><td>Well above baseline with broad pickup. The crowd has arrived.</td><td class="m">loud, no longer early</td></tr>
+            <tr><td><span class="state" style="color:#b56cf5">Peaking</span></td><td>Still high, but flat against its own peak. Velocity has stalled.</td><td class="m">distribution, not discovery</td></tr>
+            <tr><td><span class="state" style="color:#6d7280">Fading</span></td><td>Rate is falling back toward baseline.</td><td class="m">reference only</td></tr>
+          </tbody>
+        </table></div>
+        <div class="callout lime"><b>!</b><p>A lifecycle state is a description of attention, not a forecast of price.
+          Emerging means early and unproven, not safe. Breakout means crowded, not guaranteed.</p></div>
+      </section>
+
+      <section class="doc" id="metrics">
+        <div class="eyebrow">03 · Metrics</div>
+        <h2>What every number on the board means</h2>
+        <div class="tblwrap"><table class="tbl">
+          <thead><tr><th class="m">Metric</th><th>Definition</th></tr></thead>
+          <tbody>
+            <tr><td class="m"><b>Momentum score</b></td><td>Composite 0 to 100 from current rate, velocity, acceleration and novelty against the narrative's own baseline. The board's default ranking.</td></tr>
+            <tr><td class="m"><b>Current rate</b></td><td>Posts per hour on the narrative right now.</td></tr>
+            <tr><td class="m"><b>Velocity 1h / 3h</b></td><td>How much the rate has changed over the last hour and three hours. Above 1x is speeding up.</td></tr>
+            <tr><td class="m"><b>Baseline multiple</b></td><td>Current rate divided by the narrative's normal rate. 8.1x means eight times its own usual volume, not eight times some global average.</td></tr>
+            <tr><td class="m"><b>Ignition age</b></td><td>Time since the engine marked ignition. The clock every launcher is racing.</td></tr>
+            <tr><td class="m"><b>Current vs peak</b></td><td>Where the rate sits against the highest rate this narrative has reached. Near 1.0 while velocity stalls is what Peaking looks like.</td></tr>
+            <tr><td class="m"><b>Narrative share</b></td><td>This narrative's share of all attention on that stock right now.</td></tr>
+            <tr><td class="m"><b>Posts 24h, likes, reposts</b></td><td>Volume and engagement over the last day, from counts plus the sampled posts.</td></tr>
+            <tr><td class="m"><b>Sources</b></td><td>Distinct news items and sampled posts backing the narrative. Thin evidence is a reason to wait.</td></tr>
+            <tr><td class="m"><b>Launchability</b></td><td>How memeable the story is. An aid for naming and launching, never the attention ranking.</td></tr>
+          </tbody>
+        </table></div>
+      </section>
+
+      <section class="doc" id="launch">
+        <div class="eyebrow">04 · Launching</div>
+        <h2>Turning a narrative into a memestock</h2>
+        <p>Every launch carries a <code>narrative_id</code>. That is the rule the rest of the product hangs off:
+          the token page keeps showing the parent narrative's state and trend after launch, and the narrative page
+          lists every market attached to it.</p>
+        <h3>What a launch sets</h3>
+        <ul>
+          <li><b>Chain.</b> Base or Robinhood Chain. Each has its own canonical registry of stock tokens.</li>
+          <li><b>Quote asset.</b> The canonical tokenized stock for that company on that chain. The memestock is
+            priced in the stock, not in a stablecoin.</li>
+          <li><b>Identity.</b> Name, ticker, image and description. Duplicate names and symbols are flagged for
+            information; metadata and images are checked for safety.</li>
+          <li><b>Fee tier.</b> The LP fee charged on every trade, picked at launch. Reservations in the terminal
+            default to 2%, and the split below is the same whichever tier you choose.</li>
+          <li><b>Liquidity.</b> Uniswap v4, permanently locked at launch. No team allocation, no unlock lever.</li>
+        </ul>
+        <h3>Fee split, fixed at launch</h3>
+        <div class="split"><i style="width:30%;background:#f6ebd6"></i><i style="width:50%;background:#d4f84a"></i><i style="width:20%;background:#b56cf5"></i></div>
+        <div class="splitk"><span>30% launcher</span><span style="color:#d4f84a">50% stock rewards</span><span style="color:#b56cf5">20% protocol</span></div>
+        <p>The beneficiaries are burned into the contract at launch and cannot be changed afterwards. The 50% leg
+          accrues to a reward collector and is converted into the paired stock token for holders.</p>
+        <div class="callout"><b>!</b><p>Launching is permissionless, which means nobody is vetting the thesis for you.
+          A narrative score says attention moved. It does not say the claim is true, or that the token will hold value.</p></div>
+      </section>
+
+      <section class="doc" id="reserve">
+        <div class="eyebrow">05 · Reservations</div>
+        <h2>Before the launchpad opens</h2>
+        <p>Until launch day the terminal runs in reservation mode. You pick a narrative, the scout agent drafts the
+          token with you, and one wallet signature records you as the scout on record for that pair. Nothing mints,
+          nothing moves, and there is no gas.</p>
+        <ul>
+          <li><b>What you are holding.</b> The narrative and stock pair, your name, ticker, art and terms, and a queue
+            position on the launch waitlist.</li>
+          <li><b>What it earns.</b> When the launchpad opens and you complete the launch, you are the launcher: 30% of
+            every trade fee for the life of the token, plus stock rewards on anything you hold.</li>
+          <li><b>How long it lasts.</b> Reservations hold until <b>24 hours after launch</b>. After that the pair is
+            released to whoever wants it.</li>
+          <li><b>Your own thesis.</b> You do not need a board narrative. Ask the agent to search the wire, or describe
+            a story it has not picked up yet and it will name, draw and pair it for you. Custom theses are unscored
+            until the agents start tracking them.</li>
+        </ul>
+      </section>
+
+      <section class="doc" id="rewards">
+        <div class="eyebrow">06 · Stock rewards</div>
+        <h2>Half the fees, paid in the real stock</h2>
+        <ul>
+          <li><b>Asset.</b> The paired tokenized stock. Not points, not a governance coin.</li>
+          <li><b>Epochs.</b> Daily. Each epoch's allocation is computed, then published with an auditable Merkle root
+            and manifest.</li>
+          <li><b>Weight.</b> Time-weighted average balance over the epoch, so holding longer earns more and splitting
+            a balance across wallets earns nothing extra.</li>
+          <li><b>Exclusions.</b> Pool, locker, reward collector, protocol and dead addresses do not earn.</li>
+          <li><b>Claiming.</b> You sign a claim and the stock token lands straight in your wallet. Unclaimed rewards
+            roll forward after the claim window.</li>
+        </ul>
+        <p>If distribution is not production-ready on day one, rewards still accrue on chain and the UI shows them as
+          accruing. Nothing is hand-distributed without a published manifest.</p>
+      </section>
+
+      <section class="doc" id="predict">
+        <div class="eyebrow">07 · Prediction markets <span class="tag soon" style="margin-left:8px">Beta</span></div>
+        <h2>Daily up or down on the pair</h2>
+        <p>The first extension after MVP. Memestocks that clear liquidity, market cap, holder, age, volume and
+          price-feed thresholds unlock a recurring daily binary market: will the token close above its reference price
+          at settlement. Thin or manipulable launches do not get one.</p>
+        <ul>
+          <li><b>Why it exists.</b> A directional or bearish expression, a hedge for spot holders, and a daily reason
+            to come back.</li>
+          <li><b>Venue.</b> Limitless for eligible Base memestocks at Beta.</li>
+          <li><b>Rewards.</b> Participants share the same stock reward pool as holders.</li>
+        </ul>
+      </section>
+
+      <section class="doc" id="agent">
+        <div class="eyebrow">08 · X agent <span class="tag soon" style="margin-left:8px">Beta</span></div>
+        <h2>The wire, answered in public</h2>
+        <p>A distribution and conversion surface, not the source of narrative truth. Mention the account and it
+          replies with lifecycle state and metrics for a stock or a token, and deep links into the web terminal where
+          your own wallet signs anything that spends money.</p>
+        <ul>
+          <li><b>Commands.</b> Narratives for a stock, token info, launch from a narrative, quote, buy, sell, rewards.</li>
+          <li><b>Boundaries.</b> Replies only to explicit interactions. No unsolicited replies, no keyword-scanning
+            strangers, and never a request for keys or seed phrases.</li>
+          <li><b>No embedded wallets.</b> Execution stays on the web with your own wallet in MVP and Beta.</li>
+        </ul>
+      </section>
+
+      <section class="doc" id="status">
+        <div class="eyebrow">09 · Status</div>
+        <h2>What ships when</h2>
+        <div class="tblwrap"><table class="tbl">
+          <thead><tr><th>Surface</th><th>Status</th><th>Note</th></tr></thead>
+          <tbody>
+            <tr><td><b>Narrative board</b></td><td><span class="tag live">Live now</span></td><td>Scored narratives, filters, sorting and search.</td></tr>
+            <tr><td><b>Launch reservations</b></td><td><span class="tag live">Live now</span></td><td>Scout agent, wallet signature, launch waitlist.</td></tr>
+            <tr><td><b>Memestock launch</b></td><td><span class="tag soon">At launch</span></td><td>Reserved pairs mint first, then open to everyone.</td></tr>
+            <tr><td><b>Token terminal and trading</b></td><td><span class="tag soon">At launch</span></td><td>Buy and sell with the parent narrative in view.</td></tr>
+            <tr><td><b>Holder stock rewards</b></td><td><span class="tag soon">At launch</span></td><td>Daily epochs, TWAB weighting, Merkle claims.</td></tr>
+            <tr><td><b>Prediction markets</b></td><td><span class="tag later">Beta</span></td><td>Eligible pairs only, daily UP / DOWN.</td></tr>
+            <tr><td><b>X agent</b></td><td><span class="tag later">Beta</span></td><td>Read and deep link, wallet signs on web.</td></tr>
+          </tbody>
+        </table></div>
+      </section>
+
+      <section class="doc" id="risk">
+        <div class="eyebrow">10 · Risk and limits</div>
+        <h2>Read this part twice</h2>
+        <ul>
+          <li><b>A memestock is not equity.</b> A token referencing a company is parody or commentary. It carries no
+            claim on any issuer, no dividend, no vote, and no endorsement from anyone.</li>
+          <li><b>Scores are not predictions.</b> Momentum and lifecycle state describe public attention that already
+            happened. They are decision support, and they can be wrong or gamed.</li>
+          <li><b>Geofencing.</b> Tokenized-stock functionality is restricted by issuer and venue eligibility.
+            Coinbase tokenized stocks on Base are not available to US persons, and eligibility on Robinhood Chain is
+            assessed separately.</li>
+          <li><b>Permissionless means unvetted.</b> Anyone can launch anything. Duplicate names, copycat tickers and
+            bad theses all get through. Read the evidence, not the ticker.</li>
+          <li><b>No custody.</b> Your wallet signs everything. We never hold your funds and never ask for keys or seed
+            phrases.</li>
+          <li><b>Not investment advice.</b> Nothing here is a recommendation to buy or sell anything.</li>
+        </ul>
+      </section>
+
+      <section class="doc" id="faq">
+        <div class="eyebrow">11 · FAQ</div>
+        <h2>Straight answers</h2>
+        <details><summary>Do I need to bring an audience to launch?</summary><p>No. That is the point of launching from a narrative. The story already has attention, and the board is the distribution: your token appears on the narrative every other trader is already watching.</p></details>
+        <details><summary>What does the reservation actually cost?</summary><p>Nothing. You sign a message, not a transfer, so there is no gas and nothing mints. It records your wallet as the scout for that narrative and stock pair.</p></details>
+        <details><summary>What happens if I miss the 24 hour window?</summary><p>The hold expires and the pair opens up to anyone. The countdown gets posted in Telegram and on X before it runs out.</p></details>
+        <details><summary>Can I launch a narrative the agents have not found?</summary><p>Yes. Describe your thesis to the scout agent and it will name it, draw it and pair it to a stock. It launches unscored, and the engine starts tracking it from there.</p></details>
+        <details><summary>Why is the token priced in a stock instead of a stablecoin?</summary><p>Because the whole idea is the link between the story and the company. Quoting in the tokenized stock is what lets fees pay holders in that stock rather than in another memecoin.</p></details>
+        <details><summary>Who gets the trading fees?</summary><p>30% to whoever launched the token, 50% into the reward pool that pays holders in the stock, 20% to the protocol. Fixed at launch, unchangeable afterwards.</p></details>
+        <details><summary>Are there team tokens or a presale?</summary><p>No team allocation and no presale. Liquidity is locked permanently at launch.</p></details>
+        <details><summary>When do prediction markets open?</summary><p>After MVP, in Beta, and only for pairs that clear the liquidity, market cap, holder, age, volume and price-feed thresholds.</p></details>
+      </section>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap in">
+    <p><b>mstonks docs.</b> Written against the product spec for the web MVP. Anything marked Beta or Deferred is not
+      live and may change.<br><br>
+      <b>Not investment advice.</b> Memestocks launched on mstonks are community tokens. A token referencing a company
+      is parody or commentary. It is not equity, not an endorsement, and carries no claim on any issuer. Narrative
+      scores are decision support derived from public news and post counts, not a prediction. Tokenized-stock
+      functionality is geofenced by issuer and venue eligibility. Prediction markets are gated on liquidity, market
+      cap, holders, age and price-feed quality. Perpetuals are not offered.</p>
+    <div class="lk"><a href="#overview">Terms</a><a href="#overview">Privacy</a><a href="#risk">Disclosures</a></div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+  /* launch countdown, 5 Oct 2026 23:00 SGT */
+  var target = Date.UTC(2026, 9, 5, 15, 0, 0), el = document.getElementById('cdNav');
+  var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+  var tick = function () {
+    var left = target - Date.now();
+    if (left <= 0) { el.textContent = 'live now'; return; }
+    var s = Math.floor(left / 1000);
+    el.textContent = Math.floor(s / 86400) + 'd ' + pad(Math.floor(s / 3600) % 24) + 'h ' + pad(Math.floor(s / 60) % 60) + 'm';
+  };
+  tick(); setInterval(tick, 1000);
+
+  /* table of contents follows the reader */
+  var links = [].slice.call(document.querySelectorAll('.toc a'));
+  var map = {};
+  links.forEach(function (a) { map[a.getAttribute('href').slice(1)] = a; });
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      links.forEach(function (a) { a.classList.remove('on'); });
+      if (map[e.target.id]) map[e.target.id].classList.add('on');
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+  [].forEach.call(document.querySelectorAll('section.doc'), function (s) { io.observe(s); });
+})();
+</script>
+</body>
+</html>
